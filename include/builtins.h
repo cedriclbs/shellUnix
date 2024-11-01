@@ -1,0 +1,8 @@
+#ifndef BUILTINS_H
+#define BUILTINS_H
+
+int cmd_cd(char **args);
+// Permet la redirection vers un chemin, ou vers le répertoire précédent, ou vers HOME.
+
+
+#endif
