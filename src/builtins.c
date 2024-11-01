@@ -55,3 +55,18 @@ int cmd_cd (char **args){
     return 0;
 
 }
+
+
+
+
+int cmd_exit (char **args){
+    int val = 0;
+
+    // Exit avec la valeur VAL
+    if (args[1] != NULL){
+        val = atoi(args[1]);
+    }
+
+    exit(val);
+
+}
