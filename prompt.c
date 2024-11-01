@@ -26,8 +26,6 @@ void printPrompt(int valRes) {
 
     len += strlen(prompt+len);
 
-    //Basculement de couleur sur du bleu
-    sprintf(prompt + len, "\001\033[34m\002");
 
     //Référence du répertoire
     char dir[PATH_MAX];
@@ -37,12 +35,12 @@ void printPrompt(int valRes) {
         exit(1);
     }
 
-    //Tronquer
+    //Basculement couleur bleu et tronquer si nécessaire
     if(strlen(dir) > MAX_LENGTH-len){
-        sprintf(prompt+len, "...%s", dir + (strlen(dir) - (MAX_LENGTH-len-3)));
+        sprintf(prompt+len, "\001\033[34m\002...%s", dir + (strlen(dir) - (MAX_LENGTH-len-3)));
     }
     else {
-        sprintf(prompt+len,"%s", dir);
+        sprintf(prompt+len,"\001\033[34m\002%s", dir);
     }
     len += strlen(prompt + len);
 
