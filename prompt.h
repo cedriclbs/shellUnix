@@ -7,8 +7,8 @@
 #include <unistd.h>
 #include <limits.h>
 
-#define MAX_LENGTH 30
+#define MAX_DISPLAY_LENGTH 30
 
-void printPrompt(int valRes);
+char* getPrompt(int valRes);
 
 #endif

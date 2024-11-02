@@ -3,34 +3,45 @@
 #include <string.h>
 #include <unistd.h>
 #include <readline/readline.h>
+#include <readline/history.h>  // Inclure pour add_history
 #include "prompt.h"
 
-int main(){
+int main() {
+    char *ligne;
+    int val = 0;
 
-    char *input;
-    int val =0;
+    rl_outstream = stderr; // Redirige la sortie de readline vers stderr
 
-    //Boucle principale du shell
-    while(1){
+    // Boucle principale du shell
+    while (1) {
+        // Affichage du prompt
+        char *prompt = getPrompt(val);
 
-        //Affichage du prompt
-        printPrompt(val);
+        // Lecture de l'entrée
+        ligne = readline(prompt);  // Utilise readline pour lire l'entrée
 
-        //Lecture de l'entrée
-        input = readline("");
+        // Vérification de NULL pour éviter une erreur de segmentation
+        if (ligne == NULL) {
+            printf("\n"); // Gérer Ctrl + D
+            break; // Sortir de la boucle si l'entrée est NULL
+        }
 
-        //Gerer les commandes internes
-        //affichage test à supprimer
-        printf("Ligne saisie : %s\n", input);
-        if (strcmp(input, "exit") == 0) {
-            free(input); 
+        // Ajoute l'entrée à l'historique
+        add_history(ligne);
+
+        // Gérer les commandes internes
+        printf("Ligne saisie : %s\n", ligne);
+        
+        // Vérification de la commande "exit"
+        if (strcmp(ligne, "exit") == 0) {
+            free(ligne);
             break; 
         }
 
-        //Libérer la memoire
-        free(input);
-
-        //Re affiche le prompt 
+        // Libérer la mémoire
+        free(ligne);
+        
+        // Réaffiche le prompt 
         rl_redisplay();
     }
 

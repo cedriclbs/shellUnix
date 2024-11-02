@@ -3,52 +3,60 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
-#include <readline/readline.h>
+#include "prompt.h"
 
 #define MAX_LENGTH 30
 
-void printPrompt(int valRes) {
+char* getPrompt(int valRes) {
 
-    char prompt[MAX_LENGTH + 1];
-    char cwd[PATH_MAX];
-    int len = 0;
+    char *prompt = malloc(MAX_LENGTH + 1 + PATH_MAX);
 
-    //Basculement de couleur + valeur de retour entre crochets
-    if(valRes == 0) {
-        sprintf(prompt + len, "\001\033[32m\002[%d]", valRes); // Commande réussi donc vert
-    }
-    else if (valRes > 128) {
-        sprintf(prompt + len, "\001\033[91m\002[SIG]");
-    }
-    else {
-        sprintf(prompt + len, "\001\033[91m\002[%d]", valRes); // Commande échoué donc rouge
-    }
-
-    len += strlen(prompt+len);
-
-
-    //Référence du répertoire
-    char dir[PATH_MAX];
-
-    if (getcwd(dir,sizeof(dir)) == NULL) {
-        perror("cwd error");
+    if (prompt == NULL) {
+        perror("Erreur d'allocation memoire");
         exit(1);
     }
 
-    //Basculement couleur bleu et tronquer si nécessaire
-    if(strlen(dir) > MAX_LENGTH-len){
-        sprintf(prompt+len, "\001\033[34m\002...%s", dir + (strlen(dir) - (MAX_LENGTH-len-3)));
-    }
-    else {
-        sprintf(prompt+len,"\001\033[34m\002%s", dir);
-    }
-    len += strlen(prompt + len);
+    char cwd[PATH_MAX];
+    int visible_len = 0;  // Compte les caractères qui vont être affiché
+    int len = 0;          // Compte les caractères totaux dans le buffer
 
-    // Basculement à la couleur normale et du dollars"
-    sprintf(prompt + len, "\001\033[00m\002$ ");
-    len += strlen(prompt + len);
+    // Basculement des couleurs selon la valeur de retour
+    if (valRes == 0) {
+        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[32m\002[%d]", valRes); // Vert pour succès
+        visible_len += snprintf(NULL, 0, "[%d]", valRes);
+    } else if (valRes > 128) {
+        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[SIG]"); // Rouge pour signal
+        visible_len += snprintf(NULL, 0, "[SIG]");
+    } else {
+        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes); // Rouge pour échec
+        visible_len += snprintf(NULL, 0, "[%d]", valRes);
+    }
 
-    // Affichage du prompt
-    printf("%s", prompt);
-    
+    // Basculement sur la couleur bleue pour le répertoire
+    len += snprintf(prompt + len, PATH_MAX - len, "\001\033[34m\002");
+
+    // Obtention du répertoire courant
+    if (getcwd(cwd, sizeof(cwd)) == NULL) {
+        perror("cwd error");
+        free(prompt);
+        exit(1);
+    }
+
+    // Calcul de la longueur restante pour cwd
+    int cwd_len = strlen(cwd);
+    int max_cwd_len = MAX_LENGTH - visible_len - 2; // 2 pour "$ "
+
+    // Tronquement du chemin si nécessaire
+    if (cwd_len > max_cwd_len) {
+        len += snprintf(prompt + len, PATH_MAX - len, "...%s", cwd + (cwd_len - max_cwd_len + 3)); // +3 pour les points "..."
+        visible_len += max_cwd_len;
+    } else {
+        len += snprintf(prompt + len, PATH_MAX - len, "%s", cwd);
+        visible_len += cwd_len;
+    }
+
+    // Basculement sur la couleur normale et ajout du symbole du prompt
+    snprintf(prompt + len, PATH_MAX - len, "\001\033[00m\002$ ");
+
+    return prompt;
 }
