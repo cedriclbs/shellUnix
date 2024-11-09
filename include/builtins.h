@@ -7,4 +7,8 @@ int cmd_cd(char **args);
 int cmd_exit(char **args);
 // Termine le processus fsh avec comme valeur VAL
 
+int cmd_pwd();
+//Affiche la référence physique absolue du répertoire de travail courant.
+
+
 #endif
