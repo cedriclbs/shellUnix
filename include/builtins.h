@@ -10,5 +10,7 @@ int cmd_exit(char **args);
 int cmd_pwd();
 //Affiche la référence physique absolue du répertoire de travail courant.
 
+int cmd_ftype (char **args);
+//Affiche le type du fichier de référence REF (s'il s'agit d'une référence valide).
 
 #endif
