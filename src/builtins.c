@@ -19,7 +19,7 @@ int cmd_cd (char **args){
             return 1;
         }
         else if (chdir(path_h)){
-            perror("fsh: répertoire HOME non trouvé \n");
+            perror("fsh: répertoire HOME non trouvé\n");
             return 1;
         }
     }
@@ -27,11 +27,11 @@ int cmd_cd (char **args){
     // "cd -" -> répertoire précédent
     else if (strcmp(args[1], "-") == 0){
         if (strlen(prev_dir)==0){
-            fprintf(stderr, "fsh: répertoire précédent inexistant \n");
+            fprintf(stderr, "fsh: répertoire précédent inexistant\n");
             return 1;
         }
         if (chdir(prev_dir)!=0){
-            perror("fsh: erreur \n");
+            perror("fsh: erreur\n");
             return 1;
         }
         printf("%s\n", prev_dir);
@@ -69,4 +69,17 @@ int cmd_exit (char **args){
 
     exit(val);
 
+}
+
+
+
+int cmd_pwd () {
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != NULL && cwd != NULL){
+        printf("%s\n", cwd);
+        return 0;
+    } else {
+        perror("fsh: erreur\n");
+        return 1;
+    }
 }
