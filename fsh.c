@@ -5,6 +5,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>  // Inclure pour add_history
 #include "prompt.h"
+#include "exit.h"
 
 int main() {
     char *ligne;
@@ -28,14 +29,12 @@ int main() {
 
         // Ajoute l'entrée à l'historique
         add_history(ligne);
-
-        // Gérer les commandes internes
-        printf("Ligne saisie : %s\n", ligne);
         
         // Vérification de la commande "exit"
-        if (strcmp(ligne, "exit") == 0) {
+        if (strncmp(ligne, "exit", 4) == 0) {
+            int nb = test_exit(ligne);
             free(ligne);
-            break; 
+            exit(nb);
         }
 
         // Libérer la mémoire
