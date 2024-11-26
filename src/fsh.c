@@ -6,10 +6,15 @@
 #include <readline/history.h>  // Inclure pour add_history
 #include "prompt.h"
 #include "exit.h"
+#include "builtins.h"
+
+#define MAX_ARGS 100
 
 int main() {
     char *ligne;
     int val = 0;
+    char *args[MAX_ARGS];
+    int i;
 
     rl_outstream = stderr; // Redirige la sortie de readline vers stderr
 
@@ -29,8 +34,17 @@ int main() {
 
         // Ajoute l'entrée à l'historique
         add_history(ligne);
+
+        // Découper la ligne en arguments
+        i = 0;
+        char *token = strtok(ligne, " _()");  // délimiteurs
+        while (token != NULL && i < MAX_ARGS - 1) {
+            args[i++] = token;
+            token = strtok(NULL, " ");  // Continuer à découper la ligne
+        }
+        args[i] = NULL;  // Terminer le tableau d'arguments par NULL
         
-        int nb = execute_builtin(ligne);
+        int nb = execute_builtin(args);
     
         // Libérer la mémoire
         free(ligne);
