@@ -30,18 +30,17 @@ int main() {
         // Ajoute l'entrée à l'historique
         add_history(ligne);
         
-        // Vérification de la commande "exit"
-        if (strncmp(ligne, "exit", 4) == 0) {
-            int nb = test_exit(ligne);
-            free(ligne);
-            exit(nb);
-        }
-
+        int nb = execute_builtin(ligne);
+    
         // Libérer la mémoire
         free(ligne);
         
         // Réaffiche le prompt 
         rl_redisplay();
+
+        if(nb == 1){
+            return 1;
+        }
     }
 
     return 0;

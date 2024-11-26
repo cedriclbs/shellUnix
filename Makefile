@@ -1,29 +1,26 @@
 # Variables
 CC = gcc
-CFLAGS = -Wall -Wextra -I.
+CFLAGS = -Wall -Wextra -Iinclude
 TARGET = fsh
 LIBS = -lreadline
-OBJS = fsh.o \
-       prompt.o \
-       exit.o
+
+# Récupère automatiquement les fichiers sources et génère la liste des objets correspondants
+SRC_DIR = src
+INCLUDE_DIR = include
+SOURCES = $(wildcard $(SRC_DIR)/*.c)
+OBJECTS = $(SOURCES:$(SRC_DIR)/%.c=$(SRC_DIR)/%.o)
 
 # Cible principale
 all: $(TARGET)
 
 # Construction de l'exécutable
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LIBS)
+$(TARGET): $(OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $(OBJECTS) $(LIBS)
 
-# Règles pour chaque fichier objet
-fsh.o: fsh.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
-prompt.o: prompt.c prompt.h
-	$(CC) $(CFLAGS) -c $< -o $@
-
-exit.o: exit.c exit.h
+# Règle générique pour compiler les fichiers objets
+$(SRC_DIR)/%.o: $(SRC_DIR)/%.c $(INCLUDE_DIR)/%.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Nettoyage des fichiers générés
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(OBJECTS)
