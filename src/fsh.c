@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <readline/readline.h>
-#include <readline/history.h>  // Inclure pour add_history
+#include <readline/history.h>
 #include "prompt.h"
 #include "exit.h"
 #include "builtins.h"
@@ -12,11 +11,11 @@
 
 int main() {
     char *ligne;
-    int val = 0;
+    int val = 0;  // Code de retour du shell, initialisé à 0 (succès)
     char *args[MAX_ARGS];
     int i;
 
-    rl_outstream = stderr; // Redirige la sortie de readline vers stderr
+    rl_outstream = stderr;  // Rediriger la sortie de readline vers stderr
 
     // Boucle principale du shell
     while (1) {
@@ -28,8 +27,8 @@ int main() {
 
         // Vérification de NULL pour éviter une erreur de segmentation
         if (ligne == NULL) {
-            printf("\n"); // Gérer Ctrl + D
-            break; // Sortir de la boucle si l'entrée est NULL
+            printf("\n");  // Gérer Ctrl + D
+            break;  // Sortir de la boucle si l'entrée est NULL
         }
 
         // Ajoute l'entrée à l'historique
@@ -43,19 +42,16 @@ int main() {
             token = strtok(NULL, " ");  // Continuer à découper la ligne
         }
         args[i] = NULL;  // Terminer le tableau d'arguments par NULL
-        
-        int nb = execute_builtin(args);
-    
+
+        // Exécuter la commande interne et récupérer le code de retour
+        val = execute_builtin(args, val);  // Exécute la commande et met à jour 'val'
+
         // Libérer la mémoire
         free(ligne);
-        
-        // Réaffiche le prompt 
-        rl_redisplay();
 
-        if(nb == 1){
-            return 1;
-        }
+        // Réafficher le prompt
+        rl_redisplay();
     }
 
-    return 0;
+    return val;  // Retourne le code de retour du shell
 }

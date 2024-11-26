@@ -13,30 +13,30 @@ int cmd_cd(char **args) {
     if (args[1] == NULL) {
         path_h = getenv("HOME");
         if (path_h == NULL) {
-            fprintf(stderr, "fsh: impossible de trouver le répertoire HOME\n");
-            return 1;
-        } else if (chdir(path_h)) {
-            perror("fsh: répertoire HOME non trouvé\n");
-            return 1;
+            perror("cd");
+            return 1;  // Retourner 1 si l'accès au répertoire HOME échoue
+        } else if (chdir(path_h) != 0) {
+            perror("cd");
+            return 1;  // Retourner 1 si chdir échoue
         }
     }
     // "cd -" -> répertoire précédent
     else if (strcmp(args[1], "-") == 0) {
         if (strlen(prev_dir) == 0) {
-            fprintf(stderr, "fsh: répertoire précédent inexistant\n");
-            return 1;
+            fprintf(stderr, "cd: No previous directory\n");
+            return 1;  // Retourner 1 si il n'y a pas de répertoire précédent
         }
         if (chdir(prev_dir) != 0) {
-            perror("fsh: erreur\n");
-            return 1;
+            perror("cd");
+            return 1;  // Retourner 1 si chdir échoue
         }
         printf("%s\n", prev_dir);
     }
-    // "cd arg"
+    // "cd arg" -> changer de répertoire vers args[1]
     else {
         if (chdir(args[1]) != 0) {
-            perror("fsh: chemin invalide\n");
-            return 1;
+            perror("cd");
+            return 1;  // Retourner 1 si chdir échoue
         }
     }
 
@@ -44,8 +44,9 @@ int cmd_cd(char **args) {
     if (getcwd(current_dir, sizeof(current_dir)) != NULL) {
         strncpy(prev_dir, current_dir, sizeof(prev_dir) - 1);
     } else {
-        perror("fsh");
+        perror("cd");
+        return 1;  // Retourner 1 si getcwd échoue
     }
 
-    return 0;
+    return 0;  // Retourner 0 si tout se passe bien
 }
