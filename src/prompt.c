@@ -9,7 +9,7 @@
 
 char* getPrompt(int valRes) {
 
-    char *prompt = malloc(MAX_LENGTH + 1 + PATH_MAX);
+    char *prompt = malloc(MAX_LENGTH + 1 + PATH_MAX +10);
 
     if (prompt == NULL) {
         perror("Erreur d'allocation memoire");
