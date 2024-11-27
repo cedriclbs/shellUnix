@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/wait.h>
+#include "execute.h"
 
 void execute_command_with_redirection(char *command) {
     char *args[100];
