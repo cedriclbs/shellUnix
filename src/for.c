@@ -2,148 +2,100 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/wait.h>
+#include <dirent.h>
 #include "../include/for.h"
 #include "../include/builtins.h"
 
+int cmd_for(char **args, int val) {
+    char *cmd = NULL;         // La commande à exécuter
+    char *directory = NULL;   // Le répertoire "words2"
+    char *files[256];         // Tableau pour stocker les fichiers
+    int file_count = 0;       // Compteur de fichiers
+    int i = 0;                // Index pour parcourir args
 
-/**
- * Function principale pour le boucle for
- * @param args tous les mots de commande
- * @param lastExitCode lastExitCode
- * @return 0 si reussi, 1 sinon
- */
-int cmd_for(char** args, int* lastExitCode)
-{
-    // Renvoyer 1 si un des arguments est NULL
-    if (args == NULL || args[1] == NULL)
-    {
-        *lastExitCode = 1;
+    // Vérifier que le format est correct : "for F in words2 { cmd $F }"
+    if (args[0] == NULL || strcmp(args[0], "for") != 0 || 
+        args[1] == NULL || strcmp(args[2], "in") != 0 || 
+        args[3] == NULL) {
+        fprintf(stderr, "Erreur : Syntaxe incorrecte pour la boucle 'for'.\n");
         return 1;
     }
 
-    printf("\nArguments pas nuls\n");
+    directory = args[3]; // Récupérer le répertoire spécifié après "in"
 
-    /*
-     * Variables a utiliser
-     */
-
-    // Avoir la variable de boucle(fichier)
-    char* file_var = args[1];
-    char* file_var_dollar;
-    char* input;
-    char* rest;
-    char** fics;
-    char* commande;
-
-    size_t mot_num_limit;
-
-    printf("\nAvoir les variables a utiliser\n");
-
-    /*
-     * Initialiser les variables
-     */
-
-    mot_num_limit = 20;
-
-    // Avoir la commande en un seul str(avec espaces)
-    input = getWEspaces(args);
-    if (input == NULL)
-    {
-        goto clear;
-    }
-    printf("\n%s\n", input);
-
-    // Avoir les "arguments"
-    rest = getEntre(input, "in", "{");;
-    if (rest == NULL)
-    {
-        goto clear;
-    }
-    printf("\n%s\n", rest);
-
-    // Avoir les arguments dans une liste de str
-    fics = malloc(sizeof(char*) * mot_num_limit);
-    if (fics == NULL)
-    {
-        goto clear;
-    }
-    getStrMots(rest, fics, mot_num_limit);
-
-
-    // Avoir la commande a executer
-    commande = getPDStr(input, "{}");
-    if (commande == NULL)
-    {
-        goto clear;
-    }
-    printf("\n%s\n", commande);
-
-    // Avoir file_var avec dollar
-    file_var_dollar = malloc(strlen(file_var) + 2);
-    if (file_var_dollar == NULL)
-    {
-        goto clear;
-    }
-
-    printf("\nInitialiser les variables a utiliser\n");
-
-    file_var_dollar[0] = '$';
-    strcpy(file_var_dollar + 1, file_var);
-    file_var_dollar[strlen(file_var) + 2] = '\0';
-
-
-    printf("\nInitialiser file_var_dollar\n");
-
-
-
-    // Boucle pour executer la commande avec l'argument
-    // Index de rest
-    size_t i = 0;
-    // Commande changÃ©
-    char* new_comm;
-    while (fics[i] != NULL)
-    {
-        new_comm = remplace(commande, file_var_dollar, fics[i]);
-        // J'ai besoin de faire un fork ou pas? Je sais pas
-        gereCommande(new_comm, lastExitCode);
-    }
-
-    printf("\nFait boucle pour executer la commande avec argument\n");
-
-
-    // Liberer memoire
-    clear:
-        if (input != NULL)
-        {
-            free(input);
-        }
-        if (rest != NULL)
-        {
-            free(rest);
-        }
-        if (commande != NULL)
-        {
-            free(commande);
-        }
-        if (fics != NULL)
-        {
-            freeMots(fics);
-        }
-        if (file_var_dollar != NULL)
-        {
-            free(file_var_dollar);
-        }
-        *lastExitCode = 1;
-        printf("\nJuste avant finir clear\n");
+    // Ouvrir le répertoire
+    DIR *dir = opendir(directory);
+    if (dir == NULL) {
+        perror("Erreur lors de l'ouverture du répertoire");
         return 1;
+    }
 
+    // Lire les fichiers dans le répertoire
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        // Ignorer les fichiers spéciaux "." et ".."
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+        // Ajouter le fichier à la liste
+        files[file_count++] = strdup(entry->d_name);
+        if (file_count >= 256) {
+            fprintf(stderr, "Erreur : Trop de fichiers dans le répertoire '%s'.\n", directory);
+            closedir(dir);
+            return 1;
+        }
+    }
 
-    free(input);
-    free(rest);
-    free(commande);
-    freeMots(fics);
-    free(file_var_dollar);
-    printf("\nJuste avant finir exit normale\n");
+    closedir(dir);
+
+    if (file_count == 0) {
+        fprintf(stderr, "Erreur : Aucun fichier trouvé dans le répertoire '%s'.\n", directory);
+        return 1;
+    }
+
+    // Rechercher la commande entre "{" et "}"
+    int cmd_start = -1, cmd_end = -1;
+    for (i = 4; args[i] != NULL; i++) {
+        if (strcmp(args[i], "{") == 0) {
+            cmd_start = i + 1; // Début de la commande après "{"
+        } else if (strcmp(args[i], "}") == 0) {
+            cmd_end = i; // Fin de la commande avant "}"
+            break;
+        }
+    }
+
+    if (cmd_start == -1 || cmd_end == -1 || cmd_start >= cmd_end) {
+        fprintf(stderr, "Erreur : Délimiteurs '{' et '}' mal placés ou absents.\n");
+        return 1;
+    }
+
+    // Vérifier la syntaxe de la commande
+    cmd = args[cmd_start]; // Récupérer la commande (exemple : "ftype")
+    if (cmd_start + 1 >= cmd_end || strcmp(args[cmd_start + 1], "$F") != 0) {
+        fprintf(stderr, "Erreur : Syntaxe incorrecte, '$F' attendu après la commande.\n");
+        return 1;
+    }
+
+    // Préparer l'exécution de la commande pour chaque fichier
+    char *arg1[3];
+    arg1[0] = cmd;
+    arg1[2] = NULL;
+
+    for (int j = 0; j < file_count; j++) {
+        // Construire le chemin complet du fichier si nécessaire
+        char path[512];
+        snprintf(path, sizeof(path), "%s/%s", directory, files[j]);
+        arg1[1] = path;
+
+        // Exécuter la commande
+        int result = execute_builtin(arg1, val);
+        if (result != 0) {
+            fprintf(stderr, "Erreur : Commande '%s %s' échouée avec statut %d\n", arg1[0], arg1[1], result);
+        }
+
+        // Libérer la mémoire pour le fichier
+        free(files[j]);
+    }
+
     return 0;
 }
