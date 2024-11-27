@@ -9,6 +9,6 @@
 #include <sys/wait.h>
 
 
-void execute_command_with_redirection(char *command);
+int execute_command_with_redirection(char **args);
 
 #endif 

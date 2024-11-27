@@ -7,7 +7,6 @@
 #include "../include/builtins.h"
 
 int cmd_for(char **args, int val) {
-    char *cmd = NULL;         // La commande à exécuter
     char *directory = NULL;   // Le répertoire "words2"
     char *files[256];         // Tableau pour stocker les fichiers
     int file_count = 0;       // Compteur de fichiers
@@ -17,7 +16,7 @@ int cmd_for(char **args, int val) {
     if (args[0] == NULL || strcmp(args[0], "for") != 0 || 
         args[1] == NULL || strcmp(args[2], "in") != 0 || 
         args[3] == NULL) {
-        fprintf(stderr, "Erreur : Syntaxe incorrecte pour la boucle 'for'.\n");
+        perror("Erreur : Syntaxe incorrecte pour la boucle 'for'");
         return 1;
     }
 
@@ -40,7 +39,7 @@ int cmd_for(char **args, int val) {
         // Ajouter le fichier à la liste
         files[file_count++] = strdup(entry->d_name);
         if (file_count >= 256) {
-            fprintf(stderr, "Erreur : Trop de fichiers dans le répertoire '%s'.\n", directory);
+            perror("Erreur : Trop de fichiers dans le répertoire");
             closedir(dir);
             return 1;
         }
@@ -49,7 +48,7 @@ int cmd_for(char **args, int val) {
     closedir(dir);
 
     if (file_count == 0) {
-        fprintf(stderr, "Erreur : Aucun fichier trouvé dans le répertoire '%s'.\n", directory);
+        perror("Erreur : Aucun fichier trouvé dans le répertoire");
         return 1;
     }
 
@@ -65,37 +64,58 @@ int cmd_for(char **args, int val) {
     }
 
     if (cmd_start == -1 || cmd_end == -1 || cmd_start >= cmd_end) {
-        fprintf(stderr, "Erreur : Délimiteurs '{' et '}' mal placés ou absents.\n");
+        perror("Erreur : Délimiteurs '{' et '}' mal placés ou absents");
         return 1;
     }
 
     // Vérifier la syntaxe de la commande
-    cmd = args[cmd_start]; // Récupérer la commande (exemple : "ftype")
-    if (cmd_start + 1 >= cmd_end || strcmp(args[cmd_start + 1], "$F") != 0) {
-        fprintf(stderr, "Erreur : Syntaxe incorrecte, '$F' attendu après la commande.\n");
+    int valF = 0;
+    for (int j = cmd_start ; j < cmd_end; j++){
+        if (strcmp(args[j], "$F") == 0){
+            valF = 1;
+            break;
+        }
+    }
+    if (!valF){
+        perror("Erreur : Syntaxe incorrecte, '$F' attendu dans la commande");
         return 1;
     }
 
     // Préparer l'exécution de la commande pour chaque fichier
-    char *arg1[3];
-    arg1[0] = cmd;
-    arg1[2] = NULL;
-
-    for (int j = 0; j < file_count; j++) {
+    for (int k = 0; k < file_count; k++) {
         // Construire le chemin complet du fichier si nécessaire
-        char path[512];
-        snprintf(path, sizeof(path), "%s/%s", directory, files[j]);
-        arg1[1] = path;
+        char *arg1[cmd_end - cmd_start + 2];
+        int index = 0;
 
+        for (int t = cmd_start ; t < cmd_end ; t++){
+            if (strcmp(args[t], "$F") == 0){
+                char *path = malloc(512);
+                snprintf(path, 512, "%s/%s", directory, files[k]);
+                arg1[index++] = path;
+            } else {
+                arg1[index++] = strdup(args[t]);
+            }
+        }
+        arg1[index] = NULL; // Terminer le tableau d'arguments par NULL
+
+
+        
         // Exécuter la commande
         int result = execute_builtin(arg1, val);
         if (result != 0) {
-            fprintf(stderr, "Erreur : Commande '%s %s' échouée avec statut %d\n", arg1[0], arg1[1], result);
+            perror("Erreur : Commande échouée");
         }
 
         // Libérer la mémoire pour le fichier
+        for (int t = 0; t < index; t++) {
+            free(arg1[t]);
+        }
+    }
+
+    for (int j = 0; j < file_count; j++) {
         free(files[j]);
     }
+
 
     return 0;
 }

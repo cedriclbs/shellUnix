@@ -24,7 +24,7 @@ int main() {
 
         // Lecture de l'entrée
         ligne = readline(prompt);  // Utilise readline pour lire l'entrée
-
+        free(prompt);
         // Vérification de NULL pour éviter une erreur de segmentation
         if (ligne == NULL) {
             printf("\n");  // Gérer Ctrl + D
@@ -36,7 +36,7 @@ int main() {
 
         // Découper la ligne en arguments
         i = 0;
-        char *token = strtok(ligne, " _()");  // délimiteurs
+        char *token = strtok(ligne, " ()");  // délimiteurs
         while (token != NULL && i < MAX_ARGS - 1) {
             args[i++] = token;
             token = strtok(NULL, " ");  // Continuer à découper la ligne
