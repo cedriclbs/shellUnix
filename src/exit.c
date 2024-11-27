@@ -3,8 +3,8 @@
 #include <stdio.h> 
 #include "../include/exit.h"
 
-int cmd_exit(char **args) {
-    int val = 0;
+int cmd_exit(char **args, int val) {
+    int ret = val;
 
     // Vérifie si un argument est passé
     if (args[1] != NULL) {
@@ -15,7 +15,7 @@ int cmd_exit(char **args) {
                 exit(255);
             }
         }
-        val = atoi(args[1]);
+        ret = atoi(args[1]);
     }
-    exit(val);
+    exit(ret);
 }

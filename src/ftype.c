@@ -10,7 +10,7 @@ int cmd_ftype(char **args) {
         return 1;
     }
 
-    if (stat(args[1], &st) < 0) {
+    if (lstat(args[1], &st) < 0) {
         perror("ftype : erreur\n");
         return 1;
     }
