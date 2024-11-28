@@ -8,7 +8,6 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 
-
 int execute_command_with_redirection(char **args);
 
 #endif 

@@ -9,13 +9,29 @@
 
 #define MAX_ARGS 100
 
+/**
+ * @brief Point d'entrée principal du programme pour un shell interactif.
+ *
+ * Ce programme implémente un shell simple capable de :
+ * - Lire des commandes depuis l'entrée utilisateur.
+ * - Analyser et exécuter des commandes internes définies dans le programme.
+ * - Gérer l'historique des commandes avec la bibliothèque readline.
+ * 
+ * Fonctionnalités principales :
+ * - Affiche un prompt personnalisé (généré par `getPrompt`).
+ * - Découpe les commandes saisies en arguments pour les exécuter.
+ * - Exécute les commandes internes via `execute_builtin`.
+ * - Supporte les signaux de fin d'entrée (`Ctrl+D`) en terminant proprement.
+ *
+ * @return Le code de retour du shell (dernier code de retour d'une commande interne).
+ */
 int main() {
     char *ligne;
     int val = 0;  // Code de retour du shell, initialisé à 0 (succès)
     char *args[MAX_ARGS];
     int i;
 
-    rl_outstream = stderr;  // Rediriger la sortie de readline vers stderr
+    rl_outstream = stderr;  // Redirige la sortie de readline vers stderr
 
     // Boucle principale du shell
     while (1) {
@@ -23,35 +39,36 @@ int main() {
         char *prompt = getPrompt(val);
 
         // Lecture de l'entrée
-        ligne = readline(prompt);  // Utilise readline pour lire l'entrée
+        ligne = readline(prompt); 
         free(prompt);
+
         // Vérification de NULL pour éviter une erreur de segmentation
         if (ligne == NULL) {
-            printf("\n");  // Gérer Ctrl + D
-            break;  // Sortir de la boucle si l'entrée est NULL
+            printf("\n");  // Gère Ctrl + D
+            break;  
         }
 
         // Ajoute l'entrée à l'historique
         add_history(ligne);
 
-        // Découper la ligne en arguments
+        // Découpe la ligne en arguments
         i = 0;
-        char *token = strtok(ligne, " ()");  // délimiteurs
+        char *token = strtok(ligne, " ()");  // Délimiteurs
         while (token != NULL && i < MAX_ARGS - 1) {
             args[i++] = token;
-            token = strtok(NULL, " ");  // Continuer à découper la ligne
+            token = strtok(NULL, " ");  
         }
-        args[i] = NULL;  // Terminer le tableau d'arguments par NULL
+        args[i] = NULL;  
 
-        // Exécuter la commande interne et récupérer le code de retour
-        val = execute_builtin(args, val);  // Exécute la commande et met à jour 'val'
+        // Exécute la commande interne et récupère le code de retour
+        val = execute_builtin(args, val);  
 
-        // Libérer la mémoire
+        // Libère la mémoire
         free(ligne);
 
-        // Réafficher le prompt
+        // Réaffiche le prompt
         rl_redisplay();
     }
 
-    return val;  // Retourne le code de retour du shell
+    return val;
 }

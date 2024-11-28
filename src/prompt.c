@@ -7,9 +7,25 @@
 
 #define MAX_LENGTH 30
 
+/**
+ * @brief Génère un prompt personnalisé pour le shell, incluant le code de retour, le répertoire actuel et un symbole de prompt.
+ *
+ * Ce prompt est conçu pour afficher :
+ * - Le code de retour du shell, avec une couleur indiquant le succès (vert), l'échec (rouge) ou un signal (rouge avec "SIG").
+ * - Le répertoire courant, tronqué si nécessaire pour ne pas dépasser une longueur définie (`MAX_LENGTH`).
+ * - Le symbole `$` pour indiquer qu'une commande peut être saisie.
+ *
+ * Le prompt utilise des codes ANSI pour colorer le texte :
+ * - Le code de retour est affiché en vert si `valRes == 0`, en rouge en cas d'échec ou de signal.
+ * - Le répertoire est affiché en bleu.
+ * 
+ * @param valRes Le code de retour précédent du shell (par exemple, le code de retour d'une commande exécutée).
+ * @return Une chaîne de caractères allouée dynamiquement représentant le prompt.
+ *         Le caller est responsable de la libération de la mémoire de cette chaîne.
+ */
 char* getPrompt(int valRes) {
 
-    char *prompt = malloc(MAX_LENGTH + 1 + PATH_MAX +10);
+    char *prompt = malloc(MAX_LENGTH + 1 + PATH_MAX + 10);
 
     if (prompt == NULL) {
         perror("Erreur d'allocation memoire");
