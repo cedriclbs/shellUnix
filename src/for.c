@@ -6,6 +6,7 @@
 #include "../include/for.h"
 #include "../include/builtins.h"
 
+
 /**
  * Exécute une boucle for sur le contenu d'un répertoire spécifié.
  * 
@@ -62,15 +63,25 @@ int cmd_for(char **args, int val) {
 
         cmd_index = 0;
         for (int i = cmd_start; i < cmd_end; i++) {
-            char *position = strstr(args[i], "$F");
-            if (position) {
-                char new_arg[1024];
-                int prefix_len = position - args[i];
-                snprintf(new_arg, sizeof(new_arg), "%.*s%s%s", prefix_len, args[i], filepath, position + 2);
-                command[cmd_index++] = strdup(new_arg);
-            } else {
-                command[cmd_index++] = args[i];
+            char *extend_arg = malloc(strlen(args[i]) * 2 + strlen(filepath) * 5);  
+            char *temp = extend_arg;
+            char *part = args[i];
+
+            while (*part) {
+                char *next_part = strstr(part, "$F");
+                if (next_part) {
+                    memcpy(temp, part, next_part - part);
+                    temp += next_part - part;
+                    strcpy(temp, filepath);
+                    temp += strlen(filepath);
+                    part = next_part + 2; // skip "$F"
+                } else {
+                    strcpy(temp, part);
+                    break;
+                }
             }
+
+            command[cmd_index++] = extend_arg;
         }
         command[cmd_index] = NULL;
 
@@ -79,9 +90,7 @@ int cmd_for(char **args, int val) {
             perror("Erreur : Commande échouée");
         }
         for (int i = 0; i < cmd_index; i++) {
-            if (strstr(command[i], filepath)) {
-                free(command[i]);
-            }
+            free(command[i]);
         }
     }
 
