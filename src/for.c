@@ -51,24 +51,26 @@ int cmd_for(char **args, int val) {
     }
 
     while ((entry = readdir(dir)) != NULL) {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) continue;
+    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0 || entry->d_name[0] == '.') {
+        continue;
+    }
 
-        char filepath[1024];
-        snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
+    char filepath[1024];
+    snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
 
-        // Remplace $F dans la commande et construit la nouvelle commande
-        cmd_index = 0;
-        for (int i = cmd_start; i < cmd_end; i++) {
-            if (strcmp(args[i], "$F") == 0) {
-                full_command[cmd_index++] = filepath;
-            } else {
-                full_command[cmd_index++] = args[i];
-            }
+    // Remplace $F dans la commande et construit la nouvelle commande
+    cmd_index = 0;
+    for (int i = cmd_start; i < cmd_end; i++) {
+        if (strcmp(args[i], "$F") == 0) {
+            full_command[cmd_index++] = filepath;
+        } else {
+            full_command[cmd_index++] = args[i];
         }
-        full_command[cmd_index] = NULL;  
+    }
+    full_command[cmd_index] = NULL;  // Terminaison de la commande
 
-        // Exécute la commande
-        int result = execute_builtin(full_command, val);
+    // Exécute la commande
+    int result = execute_builtin(full_command, val);
         if (result != 0) {
             perror("Erreur : Commande échouée");
         }
