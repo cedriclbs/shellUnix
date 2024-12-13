@@ -6,7 +6,6 @@
 #include "../include/for.h"
 #include "../include/builtins.h"
 
-
 /**
  * Exécute une boucle for sur le contenu d'un répertoire spécifié.
  * 
