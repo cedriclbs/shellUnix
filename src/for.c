@@ -92,7 +92,6 @@ int cmd_for(char **args, int val) {
             free(command[i]);
         }
     }
-
     closedir(dir);
     return 0;
 }
