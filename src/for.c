@@ -7,12 +7,15 @@
 #include "../include/builtins.h"
 
 /**
- * Implémente une boucle `for` pour exécuter une commande sur chaque fichier dans un répertoire.
+ * Exécute une boucle for sur le contenu d'un répertoire spécifié.
  * 
- * Cette fonction interprète une syntaxe de type :
- * `for F in <directory> { <command> $F }`
- * Elle parcourt tous les fichiers dans le répertoire `<directory>` et exécute la commande spécifiée
- * pour chaque fichier, en remplaçant `$F` par le chemin complet du fichier.
+ * La fonction attend des arguments similaires à une boucle for d'un shell avec la syntaxe :
+ * for variable in répertoire { commande }
+ * La commande peut référencer l'élément du répertoire avec $F qui sera remplacé par le nom de chaque fichier/dossier.
+ *
+ * @param args Un tableau de chaînes de caractères contenant les mots de la commande.
+ * @param val Une valeur de contrôle utilisée lors de l'appel de la fonction execute_builtin, peut être utilisée pour le contrôle du flux ou le débogage.
+ * @return 0 en cas de succès, 1 en cas d'échec avec un message d'erreur.
  */
 int cmd_for(char **args, int val) {
     if (args[0] == NULL || strcmp(args[0], "for") != 0 || 
@@ -30,10 +33,9 @@ int cmd_for(char **args, int val) {
     }
 
     struct dirent *entry;
-    char *full_command[256];
+    char *command[256];
     int cmd_index = 0;
 
-    // Trouve le début et la fin de la commande dans les arguments
     int cmd_start = -1, cmd_end = -1;
     for (int i = 0; args[i] != NULL; i++) {
         if (strcmp(args[i], "{") == 0) {
@@ -51,28 +53,33 @@ int cmd_for(char **args, int val) {
     }
 
     while ((entry = readdir(dir)) != NULL) {
-    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0 || entry->d_name[0] == '.') {
-        continue;
-    }
-
-    char filepath[1024];
-    snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
-
-    // Remplace $F dans la commande et construit la nouvelle commande
-    cmd_index = 0;
-    for (int i = cmd_start; i < cmd_end; i++) {
-        if (strcmp(args[i], "$F") == 0) {
-            full_command[cmd_index++] = filepath;
-        } else {
-            full_command[cmd_index++] = args[i];
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0 || entry->d_name[0] == '.') {
+            continue;
         }
-    }
-    full_command[cmd_index] = NULL;  // Terminaison de la commande
 
-    // Exécute la commande
-    int result = execute_builtin(full_command, val);
+        char filepath[1024];
+        snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
+
+        cmd_index = 0;
+        for (int i = cmd_start; i < cmd_end; i++) {
+            if (strncmp(args[i], "$F", 2) == 0) {
+                char extended_path[1024];
+                snprintf(extended_path, sizeof(extended_path), "%s%s", filepath, args[i] + 2);
+                command[cmd_index++] = strdup(extended_path);
+            } else {
+                command[cmd_index++] = args[i];
+            }
+        }
+        command[cmd_index] = NULL;
+
+        int result = execute_builtin(command, val);
         if (result != 0) {
             perror("Erreur : Commande échouée");
+        }
+        for (int i = 0; i < cmd_index; i++) {
+            if (strncmp(command[i], filepath, sizeof(filepath)) == 0) {
+                free(command[i]);
+            }
         }
     }
 
