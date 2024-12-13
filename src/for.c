@@ -62,10 +62,12 @@ int cmd_for(char **args, int val) {
 
         cmd_index = 0;
         for (int i = cmd_start; i < cmd_end; i++) {
-            if (strncmp(args[i], "$F", 2) == 0) {
-                char extended_path[1024];
-                snprintf(extended_path, sizeof(extended_path), "%s%s", filepath, args[i] + 2);
-                command[cmd_index++] = strdup(extended_path);
+            char *position = strstr(args[i], "$F");
+            if (position) {
+                char new_arg[1024];
+                int prefix_len = position - args[i];
+                snprintf(new_arg, sizeof(new_arg), "%.*s%s%s", prefix_len, args[i], filepath, position + 2);
+                command[cmd_index++] = strdup(new_arg);
             } else {
                 command[cmd_index++] = args[i];
             }
@@ -77,7 +79,7 @@ int cmd_for(char **args, int val) {
             perror("Erreur : Commande échouée");
         }
         for (int i = 0; i < cmd_index; i++) {
-            if (strncmp(command[i], filepath, sizeof(filepath)) == 0) {
+            if (strstr(command[i], filepath)) {
                 free(command[i]);
             }
         }
