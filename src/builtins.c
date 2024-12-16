@@ -19,37 +19,51 @@
  *         - Si la commande est externe, retourne le code de retour du processus exécuté.
  *         - Si une erreur survient, retourne une valeur négative (ex. -1).
  */
-int execute_builtin(char **args, int val) {
+int execute_builtin(char **args,int argc,int val) {
     if (args[0] == NULL) {
         return val; 
     }
+
+    // Cas de la commande 'cd'
     if (strcmp(args[0], "cd") == 0) {
-        if( (args[1] != NULL) && (args[2] != NULL) ){
+        if (argc > 2) {
             fprintf(stderr, "cd: too many arguments\n");
             return 1;
         }
         return cmd_cd(args);
-    } else if (strcmp(args[0], "exit") == 0) {
-        if( (args[1] != NULL) && (args[2] != NULL) ){
+    } 
+    // Cas de la commande 'exit'
+    else if (strcmp(args[0], "exit") == 0) {
+        if (argc > 2) {
             fprintf(stderr, "exit: too many arguments\n");
             return 1;
+        } else {
+            return cmd_exit(args, val); // Aucun argument, exécute normalement
         }
-        return cmd_exit(args, val);
-    } else if (strcmp(args[0], "pwd") == 0) {
-        if( (args[1] != NULL) ){
-            fprintf(stderr, "pwd:%s: too many arguments\n",args[1]);
+    } 
+    // Cas de la commande 'pwd'
+    else if (strcmp(args[0], "pwd") == 0) {
+        if (argc > 1) {
+            fprintf(stderr, "pwd: %s: too many arguments\n", args[1]);
             return 1;
         }
         return cmd_pwd();
-    } else if (strcmp(args[0], "ftype") == 0) {
+    } 
+    // Cas de la commande 'ftype'
+    else if (strcmp(args[0], "ftype") == 0) {
         return cmd_ftype(args);
-    } else if (strcmp(args[0], "for") == 0) {
+    } 
+    // Cas de la commande 'for'
+    else if (strcmp(args[0], "for") == 0) {
         return cmd_for(args, val);
-    } else {
+    } 
+    // Commande externe
+    else {
         int result = execute_command_with_redirection(args);
         if (result == -1) {
             perror("Commande inconnue");
         }
         return result;
     }
+    return 0;
 }
