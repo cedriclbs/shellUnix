@@ -24,10 +24,22 @@ int execute_builtin(char **args, int val) {
         return val; 
     }
     if (strcmp(args[0], "cd") == 0) {
+        if( (args[1] != NULL) && (args[2] != NULL) ){
+            fprintf(stderr, "cd: too many arguments\n");
+            return 1;
+        }
         return cmd_cd(args);
     } else if (strcmp(args[0], "exit") == 0) {
+        if( (args[1] != NULL) && (args[2] != NULL) ){
+            fprintf(stderr, "exit: too many arguments\n");
+            return 1;
+        }
         return cmd_exit(args, val);
     } else if (strcmp(args[0], "pwd") == 0) {
+        if( (args[1] != NULL) ){
+            fprintf(stderr, "pwd:%s: too many arguments\n",args[1]);
+            return 1;
+        }
         return cmd_pwd();
     } else if (strcmp(args[0], "ftype") == 0) {
         return cmd_ftype(args);

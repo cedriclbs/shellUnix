@@ -40,9 +40,6 @@ char* getPrompt(int valRes) {
     if (valRes == 0) {
         len += snprintf(prompt + len, PATH_MAX - len, "\001\033[32m\002[%d]", valRes); // Vert pour succès
         visible_len += snprintf(NULL, 0, "[%d]", valRes);
-    } else if (valRes > 128) {
-        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[SIG]"); // Rouge pour signal
-        visible_len += snprintf(NULL, 0, "[SIG]");
     } else {
         len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes); // Rouge pour échec
         visible_len += snprintf(NULL, 0, "[%d]", valRes);
