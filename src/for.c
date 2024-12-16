@@ -84,7 +84,7 @@ int cmd_for(char **args, int val) {
         }
         command[cmd_index] = NULL;
 
-        int result = execute_builtin(command, val);
+        int result = execute_builtin(command,cmd_index,val);
         if (result != 0) {
             perror("Erreur : Commande échouée");
         }
