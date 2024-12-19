@@ -31,15 +31,11 @@ int has_extension(const char *filename, const char *extension) {
 }
 
 // Retire l'extension d'un nom de fichier
-void remove_extension(char *filename, const char *extension, char *output) {
+void remove_extension(char *filename) {
     const char *dot = strrchr(filename, '.');
-    if (dot && strcmp(dot + 1, extension) == 0) {
-        size_t len = dot - filename;
-        strncpy(output, filename, len);
-        output[len] = '\0';
-    } else {
-        strcpy(output, filename);
-    }
+    size_t len = dot - filename;
+    memmove(filename, filename, len); // Remplace strncpy par memmove
+    filename[len] = '\0';
 }
 
 //Fonction vérifiant le type de fichier selon le type donné en paramètre
@@ -152,7 +148,7 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
             continue;
         }
         if (extension){
-            remove_extension(nameEntry, extension, nameEntry);
+            remove_extension(nameEntry);
         } 
 
 
@@ -178,7 +174,7 @@ int cmd_for(char **args, int val) {
 
     if (!args || strcmp(args[0], "for") != 0 || !args[1] || strcmp(args[2], "in") != 0 || !args[3]) {
         perror("Erreur : Syntaxe incorrecte pour la boucle 'for'");
-        return 1;
+        return 2;
     }
 
     char *var_name = args[1];        // Nom de la variable (ex: D ou F)
@@ -220,7 +216,7 @@ int cmd_for(char **args, int val) {
             } else {
                 perror("Erreur : -e a besoin d'un argument");
                 closedir(dir);
-                return 1;
+                return 2;
             }
             //printf("CED TEST %s", args[i+1]);
         } else if (strcmp(args[i], "-r") == 0 && brace_count == 0) {
@@ -232,7 +228,7 @@ int cmd_for(char **args, int val) {
             } else {
                 perror("Erreur : -t a besoin d'un argument");
                 closedir(dir);
-                return 1;
+                return 2;
             }
         } 
     }
@@ -243,7 +239,7 @@ int cmd_for(char **args, int val) {
     if (cmd_start == -1 || cmd_end == -1) {
         perror("Erreur : Accolades '{' '}' mal placées");
         closedir(dir);
-        return 1;
+        return 2;
     }
 
 
@@ -270,7 +266,7 @@ int cmd_for(char **args, int val) {
                 if (!has_extension(entry->d_name, extension)) {
                     continue;
                 } else {
-                    remove_extension(name, extension, name);
+                    remove_extension(name);
                 }
             }
 
