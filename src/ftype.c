@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <sys/stat.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "../include/ftype.h"
 
 /**
@@ -19,28 +22,29 @@
  */
 int cmd_ftype(char **args) {
     struct stat st;
-
     if (args[1] == NULL) {
-        fprintf(stderr, "ftype : argument manquant\n");
+        perror("ftype : argument manquant");
         return 1;
     }
-
     if (lstat(args[1], &st) < 0) {
         perror("ftype : erreur\n");
         return 1;
     }
-
     if (S_ISDIR(st.st_mode)) {
-        printf("directory\n");
+        const char *message = "directory\n";
+        write(STDOUT_FILENO, message, strlen(message)); // Écrit sur STDOUT
     } else if (S_ISREG(st.st_mode)) {
-        printf("regular file\n");
+        const char *message = "regular file\n";
+        write(STDOUT_FILENO, message, strlen(message)); // Écrit sur STDOUT
     } else if (S_ISLNK(st.st_mode)) {
-        printf("symbolic link\n");
+        const char *message = "symbolic link\n";
+        write(STDOUT_FILENO, message, strlen(message)); // Écrit sur STDOUT
     } else if (S_ISFIFO(st.st_mode)) {
-        printf("named pipe\n");
+        const char *message = "named pipe\n";
+        write(STDOUT_FILENO, message, strlen(message)); // Écrit sur STDOUT
     } else {
-        printf("other\n");
+        const char *message = "other\n";
+        write(STDOUT_FILENO, message, strlen(message)); // Écrit sur STDOUT
     }
-
     return 0;
 }

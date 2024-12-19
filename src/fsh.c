@@ -44,8 +44,8 @@ int main() {
 
         // Vérification de NULL pour éviter une erreur de segmentation
         if (ligne == NULL) {
-            printf("\n");  // Gère Ctrl + D
-            break;  
+        const char *message = "\n"; 
+        write(STDOUT_FILENO, message, 1);            break;  
         }
 
         // Ajoute l'entrée à l'historique
@@ -53,22 +53,19 @@ int main() {
 
         // Découpe la ligne en arguments
         argc=0;
-        char *token = strtok(ligne, " ()");  // Délimiteurs
+        char *token = strtok(ligne, " ()");  
         while (token != NULL && argc < MAX_ARGS - 1) {
             args[argc++] = token;
             token = strtok(NULL, " ");  
         }
         args[argc] = NULL;  
 
-        // Exécute la commande interne et récupère le code de retour
+        // Exécute la commande interne,récupère le code de retour et libère la mémoire
         val = execute_builtin(args, argc,val);  
-
-        // Libère la mémoire
         free(ligne);
 
         // Réaffiche le prompt
         rl_redisplay();
     }
-
     return val;
 }
