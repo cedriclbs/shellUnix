@@ -65,7 +65,7 @@
 
 Après compilation, lancez le shell avec la commande suivante :
 ```
-./test.sh
+bash test.sh
 ```
 ou
 ```
