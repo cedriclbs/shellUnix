@@ -122,6 +122,10 @@ char **parse_redirections(char **args, char **input_file, char **output_file, ch
     if (cmd_s != 0) {
         *cmd_size = cmd_s;
     }
+    else{
+        free(cmd_args);
+        return NULL;
+    }
     return cmd_args;
 }
 

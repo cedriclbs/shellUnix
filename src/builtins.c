@@ -96,7 +96,7 @@ int execute_command(char **cmd_args, int cmd_size, int val) {
     } else if (strcmp(cmd_args[0], "if") == 0) {
         result = cmd_if(cmd_args, val);
     } else if (strcmp(cmd_args[0], "for") == 0) {
-        result = cmd_for(cmd_args, val);
+        result = cmd_for(cmd_args,cmd_size, val);
     } else if (isIn(cmd_args, cmd_size, ";")) {
         result = cmd_line(cmd_args);
     } else {
@@ -122,13 +122,19 @@ int execute_builtin(char **args, int argc, int val) {
     size_t cmd_size = argc;
     char **cmd_args;
 
-    if (handle_redirections(args, &cmd_args, &input_file, &output_file, &error_file, &output_flags, &error_flags, &cmd_size) != 0) {
+    if (handle_redirections(args, &cmd_args, &input_file, &output_file, &error_file, &output_flags, &error_flags, &cmd_size) != 0) {        free(cmd_args);
         return 1;
     }
 
     int saved_stdin = dup(STDIN_FILENO);
     int saved_stdout = dup(STDOUT_FILENO);
     int saved_stderr = dup(STDERR_FILENO);
+
+    if (saved_stdin == -1 || saved_stdout == -1 || saved_stderr == -1) {
+        perror("dup failed");
+        free(cmd_args);
+        return 1;
+    }
 
     if (setup_redirections(input_file, output_file, error_file, output_flags, error_flags) != 0) {
         restore_descriptors(saved_stdin, saved_stdout, saved_stderr);
@@ -138,6 +144,7 @@ int execute_builtin(char **args, int argc, int val) {
 
     int result = execute_command(cmd_args, cmd_size, val);
     restore_descriptors(saved_stdin, saved_stdout, saved_stderr);
+    
     free(cmd_args);
     return result;
 }

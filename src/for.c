@@ -31,15 +31,11 @@ int has_extension(const char *filename, const char *extension) {
 }
 
 // Retire l'extension d'un nom de fichier
-void remove_extension(char *filename, const char *extension, char *output) {
+void remove_extension(char *filename) {
     const char *dot = strrchr(filename, '.');
-    if (dot && strcmp(dot + 1, extension) == 0) {
-        size_t len = dot - filename;
-        strncpy(output, filename, len);
-        output[len] = '\0';
-    } else {
-        strcpy(output, filename);
-    }
+    size_t len = dot - filename;
+    memmove(filename, filename, len);
+    filename[len] = '\0';
 }
 
 //Fonction vérifiant le type de fichier selon le type donné en paramètre
@@ -58,57 +54,67 @@ int is_type(const char *path, char *type) {
 
 
 // Fonction pour remplacer les variables dynamiques comme "$D" dans les arguments
-char *replace_variable(const char *arg, const char *var_name, const char *replacement) {
-    char *result = malloc(strlen(arg) + strlen(replacement) * 5 + 1); // Mémoire suffisante
-    if (!result){
-        return NULL;
-    } 
-
-    char *pos = strstr(arg, var_name); // Position de la variable
-    char *dest = result;
+void replace_variable(const char *arg, const char *var_name, const char *replacement, char *result) {
     const char *src = arg;
+    char *dest = result;
+    char *pos;
 
-    while (pos) {
+    while ((pos = strstr(src, var_name)) != NULL) {
         size_t len = pos - src;
-        memcpy(dest, src, len); // Copie avant la variable
+        // Copier la partie avant la variable
+        memmove(dest, src, len);
         dest += len;
 
-        strcpy(dest, replacement); // Remplace par le chemin
+        // Copier la chaîne de remplacement
+        memmove(dest, replacement, strlen(replacement));
         dest += strlen(replacement);
 
-        src = pos + strlen(var_name); // Avance après la variable
-        pos = strstr(src, var_name); // Recherche la prochaine occurrence
+        // Avancer après la variable et chercher la prochaine occurrence
+        src = pos + strlen(var_name);
     }
-    strcpy(dest, src); // Copie le reste
-    return result;
+
+    // Copier le reste de la chaîne
+    memmove(dest, src, strlen(src) + 1);  // Inclure le caractère nul '\0'
 }
+
+
 
 
 // Fonction construisant et exécutant une commande pour un fichier donné en arg
-void executeCmd (const char *filepath, const char *var_name, char **args, int cmd_start, int cmd_end, int *val_retour, int val) {
-    char *command[MAX_CMD_ARGS];
-        int cmd_index = 0;
-        for (int i = cmd_start; i < cmd_end; i++) {
-            char *arg = args[i];
-            if (strstr(arg, "$") && strstr(arg, var_name)) {
-                char var_fullname[128];
-                snprintf(var_fullname, sizeof(var_fullname), "$%s", var_name);
-                command[cmd_index++] = replace_variable(arg, var_fullname, filepath);
-            } else {
-                command[cmd_index++] = strdup(arg);
-            }
-        }
-        command[cmd_index] = NULL;
+void executeCmd(const char *filepath, const char *var_name, char **args, int cmd_start, int cmd_end, int *val_retour, int val) {
+    char command[MAX_CMD_ARGS][MAX_PATH];  // Tableau statique pour contenir les arguments de la commande
+    int cmd_index = 0;
 
-        int ret = execute_builtin(command, cmd_index, val); // Exécute la commande
-        if (ret > *val_retour) {
-            *val_retour = ret;
-        }
+    for (int i = cmd_start; i < cmd_end; i++) {
+        char *arg = args[i];
+        if (strstr(arg, "$") && strstr(arg, var_name)) {
+            char var_fullname[128];
+            snprintf(var_fullname, sizeof(var_fullname), "$%s", var_name);
 
-        for (int i = 0; i < cmd_index; i++){
-            free(command[i]);
-        } 
+            // Remplacer la variable dans l'argument et remplir command[cmd_index]
+            replace_variable(arg, var_fullname, filepath, command[cmd_index]);
+        } else {
+            // Si l'argument ne contient pas la variable, on copie directement
+            snprintf(command[cmd_index], MAX_PATH, "%s", arg);  // Utilisation de snprintf pour éviter toute copie incorrecte
+        }
+        cmd_index++;
+    }
+
+    command[cmd_index][0] = '\0';  // Assurer que la chaîne est bien terminée par un caractère nul
+
+    // Maintenant, on crée un tableau pour passer à `execute_builtin`
+    char *final_args[MAX_CMD_ARGS];
+    for (int i = 0; i < cmd_index; i++) {
+        final_args[i] = command[i];  // Copier les arguments dans final_args
+    }
+    final_args[cmd_index] = NULL;  // Terminer la liste des arguments par NULL
+
+    int ret = execute_builtin(final_args, cmd_index, val);  // Exécuter la commande
+    if (ret > *val_retour) {
+        *val_retour = ret;
+    }
 }
+
 
 
 // Fonction récursive si l'option -R est activée
@@ -152,7 +158,7 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
             continue;
         }
         if (extension){
-            remove_extension(nameEntry, extension, nameEntry);
+            remove_extension(nameEntry);
         } 
 
 
@@ -174,11 +180,11 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
 
 
 // Fonction principale
-int cmd_for(char **args, int val) {
+int cmd_for(char **args,int argc, int val) {
 
     if (!args || strcmp(args[0], "for") != 0 || !args[1] || strcmp(args[2], "in") != 0 || !args[3]) {
         perror("Erreur : Syntaxe incorrecte pour la boucle 'for'");
-        return 1;
+        return 2;
     }
 
     char *var_name = args[1];        // Nom de la variable (ex: D ou F)
@@ -199,18 +205,24 @@ int cmd_for(char **args, int val) {
         return 1;
     }
 
+    int cmd_size =0;
 
     // Chercher le bloc de commandes entre { et }
     int cmd_start = -1, cmd_end = -1, brace_count = 0;
     for (int i = 4; args[i] != NULL; i++) {
         if (strcmp(args[i], "{") == 0) {
             if (brace_count == 0) cmd_start = i + 1;
+            if(brace_count!=0){
+                cmd_size++;
+            }
             brace_count++;
         } else if (strcmp(args[i], "}") == 0) {
             brace_count--;
             if (brace_count == 0) {
                 cmd_end = i;
-                break;
+            }
+            if(brace_count!=0){
+                cmd_size++;
             }
         } else if (strcmp(args[i], "-A") == 0){
             hiddenOn = 1;
@@ -234,16 +246,23 @@ int cmd_for(char **args, int val) {
                 closedir(dir);
                 return 1;
             }
-        } 
+        }else{
+            if(brace_count == 0){
+                perror("for: Option non reconnue");
+                return 1;
+            }
+            cmd_size++;
+        }
     }
 
-
-
     // Accolades bien placées ?
-    if (cmd_start == -1 || cmd_end == -1) {
-        perror("Erreur : Accolades '{' '}' mal placées");
+    int isOptionNotOn = !typeOn && !recursiveOn && !hiddenOn && !extension;
+    if (cmd_start == -1 || cmd_end == -1  || brace_count !=0
+    || (isOptionNotOn && strcmp(args[4], "{") != 0)
+    || (isOptionNotOn && argc-cmd_size != 6) ) {
+        perror("for: Erreur de syntaxe");
         closedir(dir);
-        return 1;
+        return 2;
     }
 
 
@@ -270,7 +289,7 @@ int cmd_for(char **args, int val) {
                 if (!has_extension(entry->d_name, extension)) {
                     continue;
                 } else {
-                    remove_extension(name, extension, name);
+                    remove_extension(name);
                 }
             }
 
@@ -288,8 +307,7 @@ int cmd_for(char **args, int val) {
 
         }
 
-        closedir(dir);
     }
-
+    closedir(dir);
     return val_retour;
 }
