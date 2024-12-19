@@ -21,12 +21,10 @@
  */
 int cmd_exit(char **args, int val) {
     int ret = val;
-
-    // Vérifie si un argument est passé
     if (args[1] != NULL) {
         for (int i = 0; args[1][i] != '\0'; i++) {
             if (!isdigit(args[1][i])) {
-                fprintf(stderr, "exit: %s: argument numerique requis\n", args[1]);
+                perror("exit: argument numerique requis");
                 exit(255); 
             }
         }

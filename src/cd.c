@@ -47,7 +47,7 @@ int cmd_cd(char **args) {
     // "cd -" -> va au répertoire précédent
     else if (strcmp(args[1], "-") == 0) {
         if (strlen(prev_dir) == 0) {
-            fprintf(stderr, "cd: No previous directory\n");
+            perror("cd: No previous directory\n");
             return 1; 
         }
         // Sauvegarde le répertoire actuel temporairement
