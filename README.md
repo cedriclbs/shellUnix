@@ -63,9 +63,13 @@
 
 ## Utilisation
 
-Lancez le shell avec la commande suivante :
+Après compilation, lancez le shell avec la commande suivante :
 ```
-bash test.sh ou ./test.sh
+./test.sh
+```
+ou
+```
+./test.sh
 ```
 et c'est à vous !
 
