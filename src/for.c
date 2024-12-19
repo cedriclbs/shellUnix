@@ -61,15 +61,15 @@ void replace_variable(const char *arg, const char *var_name, const char *replace
 
     while ((pos = strstr(src, var_name)) != NULL) {
         size_t len = pos - src;
-        // Copier la partie avant la variable
+        // Copie la partie avant la variable
         memmove(dest, src, len);
         dest += len;
 
-        // Copier la chaîne de remplacement
+        // Copie la chaîne de remplacement
         memmove(dest, replacement, strlen(replacement));
         dest += strlen(replacement);
 
-        // Avancer après la variable et chercher la prochaine occurrence
+        // Avance après la variable et chercher la prochaine occurrence
         src = pos + strlen(var_name);
     }
 
@@ -91,25 +91,25 @@ void executeCmd(const char *filepath, const char *var_name, char **args, int cmd
             char var_fullname[128];
             snprintf(var_fullname, sizeof(var_fullname), "$%s", var_name);
 
-            // Remplacer la variable dans l'argument et remplir command[cmd_index]
+            // Remplace la variable dans l'argument et remplir command[cmd_index]
             replace_variable(arg, var_fullname, filepath, command[cmd_index]);
         } else {
             // Si l'argument ne contient pas la variable, on copie directement
-            snprintf(command[cmd_index], MAX_PATH, "%s", arg);  // Utilisation de snprintf pour éviter toute copie incorrecte
+            snprintf(command[cmd_index], MAX_PATH, "%s", arg);  
         }
         cmd_index++;
     }
 
-    command[cmd_index][0] = '\0';  // Assurer que la chaîne est bien terminée par un caractère nul
+    command[cmd_index][0] = '\0';  // S'assurerque la chaîne est bien terminée par un caractère nul
 
     // Maintenant, on crée un tableau pour passer à `execute_builtin`
     char *final_args[MAX_CMD_ARGS];
     for (int i = 0; i < cmd_index; i++) {
-        final_args[i] = command[i];  // Copier les arguments dans final_args
+        final_args[i] = command[i];  
     }
-    final_args[cmd_index] = NULL;  // Terminer la liste des arguments par NULL
+    final_args[cmd_index] = NULL; 
 
-    int ret = execute_builtin(final_args, cmd_index, val);  // Exécuter la commande
+    int ret = execute_builtin(final_args, cmd_index, val);  
     if (ret > *val_retour) {
         *val_retour = ret;
     }
@@ -176,9 +176,6 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
 
 }
 
-
-
-
 // Fonction principale
 int cmd_for(char **args, int val) {
 
@@ -206,7 +203,7 @@ int cmd_for(char **args, int val) {
     }
 
 
-    // Chercher le bloc de commandes entre { et }
+    // Cherche le bloc de commandes entre { et }
     int cmd_start = -1, cmd_end = -1, brace_count = 0;
     for (int i = 4; args[i] != NULL; i++) {
         if (strcmp(args[i], "{") == 0) {
