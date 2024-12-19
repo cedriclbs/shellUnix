@@ -123,12 +123,19 @@ int execute_builtin(char **args, int argc, int val) {
     char **cmd_args;
 
     if (handle_redirections(args, &cmd_args, &input_file, &output_file, &error_file, &output_flags, &error_flags, &cmd_size) != 0) {
+        free(cmd_args);
         return 1;
     }
 
     int saved_stdin = dup(STDIN_FILENO);
     int saved_stdout = dup(STDOUT_FILENO);
     int saved_stderr = dup(STDERR_FILENO);
+
+    if (saved_stdin == -1 || saved_stdout == -1 || saved_stderr == -1) {
+        perror("dup failed");
+        free(cmd_args);
+        return 1;
+    }
 
     if (setup_redirections(input_file, output_file, error_file, output_flags, error_flags) != 0) {
         restore_descriptors(saved_stdin, saved_stdout, saved_stderr);
@@ -138,6 +145,7 @@ int execute_builtin(char **args, int argc, int val) {
 
     int result = execute_command(cmd_args, cmd_size, val);
     restore_descriptors(saved_stdin, saved_stdout, saved_stderr);
+    
     free(cmd_args);
     return result;
 }
