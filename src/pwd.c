@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
 #include "../include/pwd.h"
 
 /**
@@ -15,7 +17,17 @@
 int cmd_pwd() {
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
-        printf("%s\n", cwd);
+        size_t cwd_len = strlen(cwd);
+        size_t output_size = cwd_len + 2;
+        
+        char *output = malloc(output_size);
+        if (output == NULL) {
+            perror("Erreur d'allocation mémoire");
+            return 1;
+        }
+        snprintf(output, output_size, "%s\n", cwd);
+
+        write(STDOUT_FILENO, output, strlen(output)); 
         return 0;
     } else {
         perror("fsh: erreur\n");

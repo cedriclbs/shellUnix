@@ -7,6 +7,6 @@
 #include "ftype.h"
 #include "for.h"
 
-int execute_builtin(char **args, int val);
+int execute_builtin(char **args, int argc,int val);
 
 #endif

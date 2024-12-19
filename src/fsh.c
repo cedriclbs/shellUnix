@@ -29,7 +29,7 @@ int main() {
     char *ligne;
     int val = 0;  // Code de retour du shell, initialisé à 0 (succès)
     char *args[MAX_ARGS];
-    int i;
+    int argc;
 
     rl_outstream = stderr;  // Redirige la sortie de readline vers stderr
 
@@ -44,31 +44,28 @@ int main() {
 
         // Vérification de NULL pour éviter une erreur de segmentation
         if (ligne == NULL) {
-            printf("\n");  // Gère Ctrl + D
-            break;  
+        const char *message = "\n"; 
+        write(STDOUT_FILENO, message, 1);            break;  
         }
 
         // Ajoute l'entrée à l'historique
         add_history(ligne);
 
         // Découpe la ligne en arguments
-        i = 0;
-        char *token = strtok(ligne, " ()");  // Délimiteurs
-        while (token != NULL && i < MAX_ARGS - 1) {
-            args[i++] = token;
+        argc=0;
+        char *token = strtok(ligne, " ()");  
+        while (token != NULL && argc < MAX_ARGS - 1) {
+            args[argc++] = token;
             token = strtok(NULL, " ");  
         }
-        args[i] = NULL;  
+        args[argc] = NULL;  
 
-        // Exécute la commande interne et récupère le code de retour
-        val = execute_builtin(args, val);  
-
-        // Libère la mémoire
+        // Exécute la commande interne,récupère le code de retour et libère la mémoire
+        val = execute_builtin(args, argc,val);  
         free(ligne);
 
         // Réaffiche le prompt
         rl_redisplay();
     }
-
     return val;
 }
