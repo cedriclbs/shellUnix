@@ -83,6 +83,7 @@ int cmd_if(char **args, int val) {
                 return 2; 
             }
         } else {
+            perror("if: Erreur de syntaxe");
             return 2; 
         }
     }
@@ -91,9 +92,16 @@ int cmd_if(char **args, int val) {
     int ret = execute_builtin(cmd_args, cmd_argc, val);
 
     if (ret == 0) {
-        return execute_builtin(cmd2_args, cmd2_argc, val);
+        int cmd2_ret = execute_builtin(cmd2_args, cmd2_argc, val);
+        if (cmd2_ret != 0) {
+            return cmd2_ret;
+        }
     } else if (isElse) {
-        return execute_builtin(cmd3_args, cmd3_argc, val);
+        int cmd3_ret = execute_builtin(cmd3_args, cmd3_argc, val);
+        if (cmd3_ret != 0) {
+            return cmd3_ret;
+        }
     }
-    return 0; 
+
+    return 0;
 }

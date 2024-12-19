@@ -96,7 +96,7 @@ int execute_command(char **cmd_args, int cmd_size, int val) {
     } else if (strcmp(cmd_args[0], "if") == 0) {
         result = cmd_if(cmd_args, val);
     } else if (strcmp(cmd_args[0], "for") == 0) {
-        result = cmd_for(cmd_args, val);
+        result = cmd_for(cmd_args,cmd_size, val);
     } else if (isIn(cmd_args, cmd_size, ";")) {
         result = cmd_line(cmd_args);
     } else {
@@ -122,8 +122,7 @@ int execute_builtin(char **args, int argc, int val) {
     size_t cmd_size = argc;
     char **cmd_args;
 
-    if (handle_redirections(args, &cmd_args, &input_file, &output_file, &error_file, &output_flags, &error_flags, &cmd_size) != 0) {
-        free(cmd_args);
+    if (handle_redirections(args, &cmd_args, &input_file, &output_file, &error_file, &output_flags, &error_flags, &cmd_size) != 0) {        free(cmd_args);
         return 1;
     }
 

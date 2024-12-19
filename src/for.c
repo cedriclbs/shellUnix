@@ -180,7 +180,7 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
 
 
 // Fonction principale
-int cmd_for(char **args, int val) {
+int cmd_for(char **args,int argc, int val) {
 
     if (!args || strcmp(args[0], "for") != 0 || !args[1] || strcmp(args[2], "in") != 0 || !args[3]) {
         perror("Erreur : Syntaxe incorrecte pour la boucle 'for'");
@@ -205,18 +205,24 @@ int cmd_for(char **args, int val) {
         return 1;
     }
 
+    int cmd_size =0;
 
     // Chercher le bloc de commandes entre { et }
     int cmd_start = -1, cmd_end = -1, brace_count = 0;
     for (int i = 4; args[i] != NULL; i++) {
         if (strcmp(args[i], "{") == 0) {
             if (brace_count == 0) cmd_start = i + 1;
+            if(brace_count!=0){
+                cmd_size++;
+            }
             brace_count++;
         } else if (strcmp(args[i], "}") == 0) {
             brace_count--;
             if (brace_count == 0) {
                 cmd_end = i;
-                break;
+            }
+            if(brace_count!=0){
+                cmd_size++;
             }
         } else if (strcmp(args[i], "-A") == 0){
             hiddenOn = 1;
@@ -226,7 +232,7 @@ int cmd_for(char **args, int val) {
             } else {
                 perror("Erreur : -e a besoin d'un argument");
                 closedir(dir);
-                return 2;
+                return 1;
             }
             //printf("CED TEST %s", args[i+1]);
         } else if (strcmp(args[i], "-r") == 0 && brace_count == 0) {
@@ -238,16 +244,23 @@ int cmd_for(char **args, int val) {
             } else {
                 perror("Erreur : -t a besoin d'un argument");
                 closedir(dir);
-                return 2;
+                return 1;
             }
-        } 
+        }else{
+            if(brace_count == 0){
+                perror("for: Option non reconnue");
+                return 1;
+            }
+            cmd_size++;
+        }
     }
 
-
-
     // Accolades bien placées ?
-    if (cmd_start == -1 || cmd_end == -1) {
-        perror("Erreur : Accolades '{' '}' mal placées");
+    int isOptionNotOn = !typeOn && !recursiveOn && !hiddenOn && !extension;
+    if (cmd_start == -1 || cmd_end == -1  || brace_count !=0
+    || (isOptionNotOn && strcmp(args[4], "{") != 0)
+    || (isOptionNotOn && argc-cmd_size != 6) ) {
+        perror("for: Erreur de syntaxe");
         closedir(dir);
         return 2;
     }

@@ -3,6 +3,6 @@
 
 #include <stdio.h>
 
-int cmd_for(char **args,int val);
+int cmd_for(char **args,int argc,int val);
 
 #endif 
