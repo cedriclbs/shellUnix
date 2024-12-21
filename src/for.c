@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <ctype.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include "../include/for.h"
 #include "../include/builtins.h"
 
@@ -110,8 +112,37 @@ void executeCmd(const char *filepath, const char *var_name, char **args, int cmd
     if (ret > *val_retour) *val_retour = ret;
 }
 
+void executeCmdWithParallel(const char *filepath, const char *var_name, char **args, int cmd_start, int cmd_end, int *val_retour, int val, int max ,int *nbOngoing){
+    // Attendre qu'un processus ait fini
+    while(*nbOngoing >= max){ /* à tester avec == mais pour être sur avec >= d'abord*/
+        int status;
+        pid_t ended = waitpid(-1,&status,0);
+        if(ended >0){
+/*             printf("Processus terminé (PID = %d) et décrémentation de nbOngoing.\n", ended);
+ */            (*nbOngoing)--;
+        }
+    }
+    pid_t pid;
+
+    switch(pid = fork()){
+        case -1 : 
+        perror("for: Erreur sur le fork");
+        *val_retour =1;
+        return;/* ou exit(1) ?*/
+
+        case 0 : // processus fils qui exécute la commande
+        executeCmd(filepath, var_name, args, cmd_start, cmd_end, val_retour, val);
+        exit(*val_retour);
+
+        default :
+        (*nbOngoing)++; // Incrémenter le compteur de processus en cours
+/*         printf("NEW PROCESSUS pour: %s (PID = %d, nbOngoing = %d)\n", filepath, pid, *nbOngoing);
+ */        /* Gestion erreurs de l'enfant ex : processus enfant arreté par un signal ?*/
+    }
+}
+
 // Fonction récursive si l'option -R est activée
-void for_rec(const char *directory, const char *var_name, char **args, int cmd_start, int cmd_end, Options *options, int val, int *val_retour) {
+void for_rec(const char *directory, const char *var_name, char **args, int cmd_start, int cmd_end, Options *options, int val, int *val_retour, int *nbOngoing) {
     DIR *dir = opendir(directory);
     if (!dir) {
         perror("Erreur d'ouverture du répertoire");
@@ -121,7 +152,6 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
 
     struct dirent *entry;
     char filepath[MAX_PATH];
-    int nbOngoing =0;
 
     while ((entry = readdir(dir)) != NULL) {
         // Ignore les dossiers . et ..
@@ -133,7 +163,7 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
 
         if (options->type && !is_type(filepath, options->type)) {
             if (is_type(filepath, "d") && options->recursiveOn) {
-                for_rec(filepath, var_name, args, cmd_start, cmd_end, options, val, val_retour);
+                for_rec(filepath, var_name, args, cmd_start, cmd_end, options, val, val_retour,nbOngoing);
             }
             continue;
         }
@@ -142,7 +172,7 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
         int removed =0;
         if (options->extension) {
             if (!has_extension(nameEntry, options->extension)) {
-                if (is_type(filepath, "d") && options->recursiveOn) for_rec(filepath, var_name, args, cmd_start, cmd_end, options, val, val_retour);
+                if (is_type(filepath, "d") && options->recursiveOn) for_rec(filepath, var_name, args, cmd_start, cmd_end, options, val, val_retour,nbOngoing);
                 continue;
             } else {
                 remove_extension(nameEntry);
@@ -157,15 +187,17 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
             path= filepath2;
         }
 
-        if(options->parallelOn > 0){ nbOngoing=2;
-/*             executeCmdWithParallel(path, var_name, args, cmd_start, cmd_end, val_retour, val, &nbOngoing);
- */        }
+        // Gère la parallélisation
+        if(options->parallelOn > 0){
+/*             printf("FILEPATH en cours de traitement : %s (nbOngoing = %d)\n", filepath, *nbOngoing);
+ */            executeCmdWithParallel(path, var_name, args, cmd_start, cmd_end, val_retour, val, options->parallelOn, nbOngoing);
+        }
         else{
             executeCmd(path, var_name, args, cmd_start, cmd_end, val_retour, val);
         }
 
         if (is_type(filepath, "d") && options->recursiveOn) {
-            for_rec(filepath, var_name, args, cmd_start, cmd_end, options, val, val_retour);
+            for_rec(filepath, var_name, args, cmd_start, cmd_end, options, val, val_retour,nbOngoing);
         }
     }
     closedir(dir);
@@ -222,11 +254,24 @@ int cmd_for(char **args, int argc, int val) {
             }
         } else if (strcmp(args[i], "-p") == 0 && brace_count == 0) {
             if (args[++i]) {
-                if(atoi(args[i])<=0){
-                    perror("for: l'argument de -p doit être supérieur à 0");
+                int is_number = 1; // Indicateur pour vérifier si tous les caractères sont des chiffres
+                for (int j = 0; args[i][j] != '\0'; j++) {
+                    if (!isdigit(args[i][j])) {
+                        is_number = 0;
+                        break;
+                    }
+                }
+
+                if (!is_number) {
+                    perror("for: l'argument de -p doit être un nombre");
                     return 1;
-                } else {
-                    options.parallelOn = atoi(args[i]);
+                }else{
+                    if(atoi(args[i])<=0){
+                        perror("for: l'argument de -p doit être supérieur à 0");
+                        return 1;
+                    } else {
+                        options.parallelOn = atoi(args[i]);
+                    }
                 }
             } else {
                 perror("for: -p a besoin d'un argument");
@@ -250,8 +295,19 @@ int cmd_for(char **args, int argc, int val) {
         return 2;
     }
 
-    for_rec(directory, var_name, args, cmd_start, cmd_end, &options, val, &val_retour);
+    int nbOngoing=0; // nombre de processus en cours
+    for_rec(directory, var_name, args, cmd_start, cmd_end, &options, val, &val_retour,&nbOngoing);
 
-    if(val_retour==-1) return 1;
+    //Tous les processus enfants doivent être terminé 
+    while (nbOngoing > 0) {
+/*         printf("Attente des processus restants (nbOngoing = %d)\n", nbOngoing);
+ */        int status;
+        pid_t finished = waitpid(-1, &status, 0);
+        if (finished > 0) {
+            nbOngoing--;
+        }
+    }
+
+    if(val_retour==-1) return 1; // REP invalide
     return val_retour;
 }
