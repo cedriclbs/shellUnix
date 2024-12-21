@@ -23,9 +23,11 @@
  * @return 0 en cas de succès, 1 en cas d'échec avec un message d'erreur.
  */
 
+/* Structure correspondant aux options de la boucles for */
 typedef struct {
     int recursiveOn;
     int hiddenOn;
+    int parallelOn;
     char *extension;
     char *type;
 } Options;
@@ -116,8 +118,10 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
         *val_retour = -1;
         return;
     }
+
     struct dirent *entry;
     char filepath[MAX_PATH];
+    int nbOngoing =0;
 
     while ((entry = readdir(dir)) != NULL) {
         // Ignore les dossiers . et ..
@@ -153,7 +157,13 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
             path= filepath2;
         }
 
-        executeCmd(path, var_name, args, cmd_start, cmd_end, val_retour, val);
+        if(options->parallelOn > 0){ nbOngoing=2;
+/*             executeCmdWithParallel(path, var_name, args, cmd_start, cmd_end, val_retour, val, &nbOngoing);
+ */        }
+        else{
+            executeCmd(path, var_name, args, cmd_start, cmd_end, val_retour, val);
+        }
+
         if (is_type(filepath, "d") && options->recursiveOn) {
             for_rec(filepath, var_name, args, cmd_start, cmd_end, options, val, val_retour);
         }
@@ -163,20 +173,20 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
 
 // Fonction qui indique si la boucle for est sans option
 int isNotOptions(Options *options) {
-    return options->recursiveOn == 0 && options->hiddenOn == 0 &&
-           options->extension == NULL && options->type == NULL;
+    return options->recursiveOn == 0 && options->hiddenOn == 0 && options->parallelOn == 0
+           && options->extension == NULL && options->type == NULL;
 }
 
 // Fontion principale
 int cmd_for(char **args, int argc, int val) {
     if (!args || strcmp(args[0], "for") != 0 || !args[1] || strcmp(args[2], "in") != 0 || !args[3]) {
-        perror("Erreur : Syntaxe incorrecte pour la boucle 'for'");
+        perror("for: Syntaxe incorrecte pour la boucle 'for'");
         return 2;
     }
 
     char *var_name = args[1];  // Nom de la variable (ex: D ou F)
     char *directory = args[3]; // Répertoire ou liste d'éléments
-    Options options = {0, 0, NULL, NULL};
+    Options options = {0, 0, 0,NULL, NULL};
     int val_retour = 0;
 
     // Chercher le bloc de commadnes entre { et }
@@ -198,7 +208,7 @@ int cmd_for(char **args, int argc, int val) {
             if (args[++i]) {
                 options.extension = args[i];
             } else {
-                perror("Erreur : -e a besoin d'un argument");
+                perror("for: -e a besoin d'un argument");
                 return 1;
             }
         } else if (strcmp(args[i], "-r") == 0 && brace_count == 0) {
@@ -207,7 +217,19 @@ int cmd_for(char **args, int argc, int val) {
             if (args[++i]) {
                 options.type = args[i];
             } else {
-                perror("Erreur : -t a besoin d'un argument");
+                perror("for: -t a besoin d'un argument");
+                return 1;
+            }
+        } else if (strcmp(args[i], "-p") == 0 && brace_count == 0) {
+            if (args[++i]) {
+                if(atoi(args[i])<=0){
+                    perror("for: l'argument de -p doit être supérieur à 0");
+                    return 1;
+                } else {
+                    options.parallelOn = atoi(args[i]);
+                }
+            } else {
+                perror("for: -p a besoin d'un argument");
                 return 1;
             }
         } else {
