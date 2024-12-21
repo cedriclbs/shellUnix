@@ -51,13 +51,12 @@ int is_type(const char *path, char *type) {
         perror("Erreur stat");
         return 0;
     }
-    if (strcmp(type,"d") == 0) return S_ISDIR(st.st_mode);   // répertoire ?
-    if (strcmp(type,"f") == 0)  return S_ISREG(st.st_mode);   // fichier ordinaire ?
-    if (strcmp(type,"l") == 0)  return S_ISLNK(st.st_mode);   // Lien symbolique ?
-    if (strcmp(type,"p") == 0)  return S_ISFIFO(st.st_mode);  // Tube nommé ?
+    if (strcmp(type,"d") == 0) return S_ISDIR(st.st_mode);   // répertoire 
+    if (strcmp(type,"f") == 0)  return S_ISREG(st.st_mode);   // fichier ordinaire 
+    if (strcmp(type,"l") == 0)  return S_ISLNK(st.st_mode);   // Lien symbolique 
+    if (strcmp(type,"p") == 0)  return S_ISFIFO(st.st_mode);  // Tube nommé 
     return 0;
 }
-
 
 // Fonction pour remplacer les variables dynamiques comme "$D" dans les arguments
 void replace_variable(const char *arg, const char *var_name, const char *replacement, char *result) {
@@ -67,24 +66,15 @@ void replace_variable(const char *arg, const char *var_name, const char *replace
 
     while ((pos = strstr(src, var_name)) != NULL) {
         size_t len = pos - src;
-        // Copier la partie avant la variable
-        memmove(dest, src, len);
+        memmove(dest, src, len); // Copier la partie avant la variable
         dest += len;
-
-        // Copier la chaîne de remplacement
-        memmove(dest, replacement, strlen(replacement));
+        memmove(dest, replacement, strlen(replacement)); // Copier la chaîne de remplacement
         dest += strlen(replacement);
-
-        // Avancer après la variable et chercher la prochaine occurrence
-        src = pos + strlen(var_name);
+        src = pos + strlen(var_name); // Avancer après la variable et chercher la prochaine occurrence
     }
-
     // Copier le reste de la chaîne
     memmove(dest, src, strlen(src) + 1);  // Inclure le caractère nul '\0'
 }
-
-
-
 
 // Fonction construisant et exécutant une commande pour un fichier donné en arg
 void executeCmd(const char *filepath, const char *var_name, char **args, int cmd_start, int cmd_end, int *val_retour, int val) {
@@ -96,7 +86,6 @@ void executeCmd(const char *filepath, const char *var_name, char **args, int cmd
         if (strstr(arg, "$") && strstr(arg, var_name)) {
             char var_fullname[128];
             snprintf(var_fullname, sizeof(var_fullname), "$%s", var_name);
-
             // Remplacer la variable dans l'argument et remplir command[cmd_index]
             replace_variable(arg, var_fullname, filepath, command[cmd_index]);
         } else {
@@ -116,9 +105,7 @@ void executeCmd(const char *filepath, const char *var_name, char **args, int cmd
     final_args[cmd_index] = NULL;  // Terminer la liste des arguments par NULL
 
     int ret = execute_builtin(final_args, cmd_index, val);  // Exécuter la commande
-    if (ret > *val_retour) {
-        *val_retour = ret;
-    }
+    if (ret > *val_retour) *val_retour = ret;
 }
 
 // Fonction récursive si l'option -R est activée
@@ -126,59 +113,61 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
     DIR *dir = opendir(directory);
     if (!dir) {
         perror("Erreur d'ouverture du répertoire");
+        *val_retour = -1;
         return;
     }
     struct dirent *entry;
     char filepath[MAX_PATH];
 
     while ((entry = readdir(dir)) != NULL) {
-
         // Ignore les dossiers . et ..
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-            continue;
-        }
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) continue;
         // Ignore les fichiers cachés si l'option -A n'est pas activée
-        if (!options->hiddenOn && entry->d_name[0] == '.') {
-            continue;
-        }
+        if (!options->hiddenOn && entry->d_name[0] == '.') continue;
 
         snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
 
         if (options->type && !is_type(filepath, options->type)) {
-            if (is_type(filepath, "d")) {
+            if (is_type(filepath, "d") && options->recursiveOn) {
                 for_rec(filepath, var_name, args, cmd_start, cmd_end, options, val, val_retour);
             }
             continue;
         }
 
         char *nameEntry = entry->d_name;
-        if (options->extension && !has_extension(nameEntry, options->extension)) {
-            if (is_type(filepath, "d")) {
-                for_rec(filepath, var_name, args, cmd_start, cmd_end, options, val, val_retour);
-            }
-            continue;
-        }
+        int removed =0;
         if (options->extension) {
-            remove_extension(nameEntry);
-        } 
+            if (!has_extension(nameEntry, options->extension)) {
+                if (is_type(filepath, "d") && options->recursiveOn) for_rec(filepath, var_name, args, cmd_start, cmd_end, options, val, val_retour);
+                continue;
+            } else {
+                remove_extension(nameEntry);
+                removed=1;
+            }
+        }
 
-        executeCmd(filepath, var_name, args, cmd_start, cmd_end, val_retour, val);
+        char *path=filepath;
+        if (removed){
+            char filepath2[MAX_PATH];
+            snprintf(filepath2, sizeof(filepath), "%s/%s", directory, nameEntry);
+            path= filepath2;
+        }
 
-        if (is_type(filepath, "d")) {
+        executeCmd(path, var_name, args, cmd_start, cmd_end, val_retour, val);
+        if (is_type(filepath, "d") && options->recursiveOn) {
             for_rec(filepath, var_name, args, cmd_start, cmd_end, options, val, val_retour);
         }
     }
-
     closedir(dir);
 }
 
+// Fonction qui indique si la boucle for est sans option
 int isNotOptions(Options *options) {
-    return options->recursiveOn == 0 &&
-           options->hiddenOn == 0 &&
-           options->extension == NULL &&
-           options->type == NULL;
+    return options->recursiveOn == 0 && options->hiddenOn == 0 &&
+           options->extension == NULL && options->type == NULL;
 }
 
+// Fontion principale
 int cmd_for(char **args, int argc, int val) {
     if (!args || strcmp(args[0], "for") != 0 || !args[1] || strcmp(args[2], "in") != 0 || !args[3]) {
         perror("Erreur : Syntaxe incorrecte pour la boucle 'for'");
@@ -187,15 +176,8 @@ int cmd_for(char **args, int argc, int val) {
 
     char *var_name = args[1];  // Nom de la variable (ex: D ou F)
     char *directory = args[3]; // Répertoire ou liste d'éléments
-
     Options options = {0, 0, NULL, NULL};
     int val_retour = 0;
-
-    DIR *dir = opendir(directory);
-    if (!dir) {
-        perror("Erreur d'ouverture du répertoire");
-        return 1;
-    }
 
     // Chercher le bloc de commadnes entre { et }
     int cmd_size = 0;
@@ -204,19 +186,12 @@ int cmd_for(char **args, int argc, int val) {
     for (int i = 4; args[i] != NULL; i++) {
         if (strcmp(args[i], "{") == 0) {
             if (brace_count == 0) cmd_start = i + 1;
-            if (brace_count != 0) {
-                cmd_size++;
-            }
+            if (brace_count > 0) cmd_size++;
             brace_count++;
-
         } else if (strcmp(args[i], "}") == 0) {
             brace_count--;
-            if (brace_count == 0) {
-                cmd_end = i;
-            }
-            if (brace_count != 0) {
-                cmd_size++;
-            }
+            if (brace_count == 0) cmd_end = i;
+            if (brace_count > 0) cmd_size++;
         } else if (strcmp(args[i], "-A") == 0) {
             options.hiddenOn = 1;
         } else if (strcmp(args[i], "-e") == 0 && brace_count == 0) {
@@ -224,7 +199,6 @@ int cmd_for(char **args, int argc, int val) {
                 options.extension = args[i];
             } else {
                 perror("Erreur : -e a besoin d'un argument");
-                closedir(dir);
                 return 1;
             }
         } else if (strcmp(args[i], "-r") == 0 && brace_count == 0) {
@@ -234,7 +208,6 @@ int cmd_for(char **args, int argc, int val) {
                 options.type = args[i];
             } else {
                 perror("Erreur : -t a besoin d'un argument");
-                closedir(dir);
                 return 1;
             }
         } else {
@@ -248,50 +221,15 @@ int cmd_for(char **args, int argc, int val) {
 
     // Accolades bien placées ?
     int isOptionNotOn = isNotOptions(&options);
-
     if (cmd_start == -1 || cmd_end == -1 || brace_count != 0
         || (isOptionNotOn && strcmp(args[4], "{") != 0)
         || (isOptionNotOn && argc - cmd_size != 6)) {
         perror("for: Erreur de syntaxe");
-        closedir(dir);
         return 2;
     }
 
-    if (options.recursiveOn) {
-        for_rec(directory, var_name, args, cmd_start, cmd_end, &options, val, &val_retour);
-    } else {
-        struct dirent *entry;
-        while ((entry = readdir(dir)) != NULL) {
-            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-                continue;
-            }
+    for_rec(directory, var_name, args, cmd_start, cmd_end, &options, val, &val_retour);
 
-            // Ignore les fichiers cachés si l'option -A n'est pas activée
-            if (!options.hiddenOn && entry->d_name[0] == '.') {
-                continue;
-            }
-
-            char *name = entry->d_name;
-            if (options.extension) {
-                if (!has_extension(name, options.extension)) {
-                    continue;
-                } else {
-                    remove_extension(name);
-                }
-            }
-
-            char filepath[MAX_PATH];
-            snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
-
-            // Si l'option '-t' est spécifiée : vérifie le type de fichier
-            if (options.type && !is_type(filepath, options.type)) {
-                continue;
-            }
-            // Construit et exécute la commande
-            executeCmd(filepath, var_name, args, cmd_start, cmd_end, &val_retour, val);
-        }
-    }
-
-    closedir(dir);
+    if(val_retour==-1) return 1;
     return val_retour;
 }
