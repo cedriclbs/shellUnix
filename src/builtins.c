@@ -7,6 +7,7 @@
 #include "../include/cmd_line.h"
 #include "../include/ifelse.h"
 #include "../include/redirections.h"
+#include "../include/pipelines.h"
 
 /**
  * Vérifie la présence d'une sous-chaîne dans les arguments de la commande.
@@ -130,7 +131,9 @@ int execute_builtin(char **args, int argc, int val) {
         return val;
     }
 
-    if(isThereDelimiterOutside(args,";") == 1){
+    if(isThereDelimiterOutside(args,"|") == 1){
+        return cmd_pipelines(args);
+    } else if(isThereDelimiterOutside(args,";") == 1){
         return cmd_line(args);
     } else if(strcmp(args[0],"for") == 0){
         return cmd_for(args,argc,val);

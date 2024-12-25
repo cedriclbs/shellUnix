@@ -33,7 +33,7 @@ char **copy_cmd(char *cur_cmd[], int cur_cmd_size) {
  * @param nb Pointeur pour stocker le nombre de commandes divisées.
  * @return Tableau de tableaux de chaînes, chaque tableau représentant une commande.
  */
-char ***split_cmd(char *args[], int *nb) {
+char ***split_cmd(char *args[], int *nb, char *delimiter) {
     char ***ret_tab = malloc(100 * sizeof(char **));  
     int count = 0;
     int i = 0;
@@ -47,9 +47,10 @@ char ***split_cmd(char *args[], int *nb) {
             in_braces++;  // Entrée dans une paire d'accolades
         } else if (strcmp(args[i], "}") == 0) {
             in_braces--;  // Sortie de la paire d'accolades
-        } 
+        }
+
         // Si nous ne sommes pas dans des accolades, gérer les points-virgules
-        if (in_braces == 0 && strcmp(args[i], ";") == 0) {  
+        if (in_braces == 0 && strcmp(args[i], delimiter) == 0) {  
             if (cur_cmd_size > 0) {
                 ret_tab[count] = copy_cmd(cur_cmd, cur_cmd_size);  // Copie la commande dans le tableau final
                 count++;
@@ -64,13 +65,18 @@ char ***split_cmd(char *args[], int *nb) {
         i++;
     }
 
+    if(strcmp(delimiter, "|") == 0 && cur_cmd_size == 0 ){
+        perror("pipelines: Erreur de syntaxe");
+        return NULL; /* à vérifier */
+    }
+
     // Copierla dernière commande si elle existe
     if (cur_cmd_size > 0) {
         ret_tab[count] = copy_cmd(cur_cmd, cur_cmd_size);
         count++;
     }
 
-    *nb = count; 
+    *nb = count;  
     return ret_tab;
 }
 
@@ -115,7 +121,7 @@ int execute_cmd(char **cmd, int argc, int val) {
  */
 int cmd_line(char **args) {
     int nb_cmd = 0;
-    char ***cmds = split_cmd(args, &nb_cmd);  
+    char ***cmds = split_cmd(args, &nb_cmd, ";");  
 
     if (cmds == NULL) {
         return 1;

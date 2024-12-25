@@ -3,4 +3,8 @@
 
 int cmd_line(char **args);
 
-#endif 
+char **copy_cmd(char *cur_cmd[], int cur_cmd_size);
+
+char ***split_cmd(char *args[], int *nb, char *delimiter);
+
+#endif
