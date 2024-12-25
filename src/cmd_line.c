@@ -47,8 +47,7 @@ char ***split_cmd(char *args[], int *nb) {
             in_braces++;  // Entrée dans une paire d'accolades
         } else if (strcmp(args[i], "}") == 0) {
             in_braces--;  // Sortie de la paire d'accolades
-        }
-
+        } 
         // Si nous ne sommes pas dans des accolades, gérer les points-virgules
         if (in_braces == 0 && strcmp(args[i], ";") == 0) {  
             if (cur_cmd_size > 0) {
@@ -71,7 +70,7 @@ char ***split_cmd(char *args[], int *nb) {
         count++;
     }
 
-    *nb = count;  
+    *nb = count; 
     return ret_tab;
 }
 

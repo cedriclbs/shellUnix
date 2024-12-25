@@ -17,7 +17,7 @@
  */
 int isIn(char **args, int argc, const char *s) {
     for (int i = 0; i < argc; i++) {
-        if (strstr(args[i], s)) {
+        if (strcmp(args[i], s) == 0) {
             return 1;
         }
     }
@@ -93,16 +93,29 @@ int execute_command(char **cmd_args, int cmd_size, int val) {
         }
     } else if (strcmp(cmd_args[0], "ftype") == 0) {
         result = cmd_ftype(cmd_args);
-    } else if (strcmp(cmd_args[0], "if") == 0) {
-        result = cmd_if(cmd_args, val);
-    } else if (strcmp(cmd_args[0], "for") == 0) {
-        result = cmd_for(cmd_args,cmd_size, val);
-    } else if (isIn(cmd_args, cmd_size, ";")) {
-        result = cmd_line(cmd_args);
     } else {
         result = execute_command_with_redirection(cmd_args);
     }
     return result;
+}
+
+int isThereDelimiterOutside(char **args, char *delimiter){
+    int in_braces=0;
+    int isDelimiterOutside=0;
+    int i=0;
+
+    while (args[i] != NULL) {
+        if (strcmp(args[i], "{") == 0) {
+            in_braces++;  // Entrée dans une paire d'accolades
+        } else if (strcmp(args[i], "}") == 0) {
+            in_braces--;  // Sortie de la paire d'accolades
+        } else if (in_braces == 0 && strcmp(args[i], delimiter) == 0) {  
+            isDelimiterOutside =1;
+        }
+        i++;
+    }
+
+    return isDelimiterOutside;
 }
 
 /**
@@ -117,34 +130,42 @@ int execute_builtin(char **args, int argc, int val) {
         return val;
     }
 
-    char *input_file = NULL, *output_file = NULL, *error_file = NULL;
-    int output_flags = 0, error_flags = 0;
-    size_t cmd_size = argc;
-    char **cmd_args;
+    if(isThereDelimiterOutside(args,";") == 1){
+        return cmd_line(args);
+    } else if(strcmp(args[0],"for") == 0){
+        return cmd_for(args,argc,val);
+    } else if(strcmp(args[0],"if") == 0){
+        return cmd_if(args,val);
+    } else {
+        char *input_file = NULL, *output_file = NULL, *error_file = NULL;
+        int output_flags = 0, error_flags = 0;
+        size_t cmd_size = argc;
+        char **cmd_args;
 
-    if (handle_redirections(args, &cmd_args, &input_file, &output_file, &error_file, &output_flags, &error_flags, &cmd_size) != 0) {        free(cmd_args);
-        return 1;
-    }
+        if (handle_redirections(args, &cmd_args, &input_file, &output_file, &error_file, &output_flags, &error_flags, &cmd_size) != 0) {        free(cmd_args);
+            return 1;
+        }
 
-    int saved_stdin = dup(STDIN_FILENO);
-    int saved_stdout = dup(STDOUT_FILENO);
-    int saved_stderr = dup(STDERR_FILENO);
+        int saved_stdin = dup(STDIN_FILENO);
+        int saved_stdout = dup(STDOUT_FILENO);
+        int saved_stderr = dup(STDERR_FILENO);
 
-    if (saved_stdin == -1 || saved_stdout == -1 || saved_stderr == -1) {
-        perror("dup failed");
-        free(cmd_args);
-        return 1;
-    }
+        if (saved_stdin == -1 || saved_stdout == -1 || saved_stderr == -1) {
+            perror("dup failed");
+            free(cmd_args);
+            return 1;
+        }
 
-    if (setup_redirections(input_file, output_file, error_file, output_flags, error_flags) != 0) {
+        if (setup_redirections(input_file, output_file, error_file, output_flags, error_flags) != 0) {
+            restore_descriptors(saved_stdin, saved_stdout, saved_stderr);
+            free(cmd_args);
+            return 1;
+        }
+
+        int result = execute_command(cmd_args, cmd_size, val);
         restore_descriptors(saved_stdin, saved_stdout, saved_stderr);
+        
         free(cmd_args);
-        return 1;
+        return result;
     }
-
-    int result = execute_command(cmd_args, cmd_size, val);
-    restore_descriptors(saved_stdin, saved_stdout, saved_stderr);
-    
-    free(cmd_args);
-    return result;
 }
