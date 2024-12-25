@@ -280,6 +280,7 @@ int cmd_for(char **args, int argc, int val) {
         } else {
             if (brace_count == 0) {
                 perror("for: Option non reconnue");
+                printf("OPTION NON RECONNU%s", args[i]);
                 return 1;
             }
             cmd_size++;
@@ -290,7 +291,7 @@ int cmd_for(char **args, int argc, int val) {
     int isOptionNotOn = isNotOptions(&options);
     if (cmd_start == -1 || cmd_end == -1 || brace_count != 0
         || (isOptionNotOn && strcmp(args[4], "{") != 0)
-        || (isOptionNotOn && argc - cmd_size != 6)) {
+        || (isOptionNotOn && argc - cmd_size!= 6)) {
         perror("for: Erreur de syntaxe");
         return 2;
     }
