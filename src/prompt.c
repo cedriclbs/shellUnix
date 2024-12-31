@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <readline/history.h>
 #include "prompt.h"
 
 #define MAX_LENGTH 30
@@ -29,6 +30,7 @@ char* getPrompt(int valRes) {
 
     if (prompt == NULL) {
         perror("Erreur d'allocation memoire");
+        clear_history();
         exit(1);
     }
 
@@ -52,6 +54,7 @@ char* getPrompt(int valRes) {
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
         perror("cwd error");
         free(prompt);
+        clear_history();
         exit(1);
     }
 

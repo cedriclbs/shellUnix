@@ -166,6 +166,8 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
         if (!options->hiddenOn && entry->d_name[0] == '.') continue;
 
         snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
+    printf("Processing file: %s\n", filepath);
+        if (is_type(filepath, "l")) continue;
 
         if (options->type && !is_type(filepath, options->type)) {
             if (is_type(filepath, "d") && options->recursiveOn) {
@@ -194,11 +196,11 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
         }
 
         // Gère la parallélisation
-        if(options->parallelOn > 0){
-/*             printf("FILEPATH en cours de traitement : %s (nbOngoing = %d)\n", filepath, *nbOngoing);
- */            executeCmdWithParallel(path, var_name, args, cmd_start, cmd_end, val_retour, val, options->parallelOn, nbOngoing);
-        }
-        else{
+        if (options->parallelOn > 0) {
+            printf("Executing command in parallel for: %s\n", filepath); // Debug output
+            executeCmdWithParallel(path, var_name, args, cmd_start, cmd_end, val_retour, val, options->parallelOn, nbOngoing);
+        } else {
+            printf("Executing command for: %s\n", filepath); // Debug output
             executeCmd(path, var_name, args, cmd_start, cmd_end, val_retour, val);
         }
 
@@ -306,7 +308,7 @@ int cmd_for(char **args, int argc, int val) {
     for_rec(directory, var_name, args, cmd_start, cmd_end, &options, val, &val_retour,&nbOngoing);
 
     //Tous les processus enfants doivent être terminé 
-    while (nbOngoing > 0) {
+    while (options.parallelOn > 0 && nbOngoing > 0) {
 /*         printf("Attente des processus restants (nbOngoing = %d)\n", nbOngoing);
  */        int status;
         pid_t finished = waitpid(-1, &status, 0);
