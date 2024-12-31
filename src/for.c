@@ -119,7 +119,13 @@ void executeCmdWithParallel(const char *filepath, const char *var_name, char **a
         pid_t ended = waitpid(-1,&status,0);
         if(ended >0){
 /*             printf("Processus terminé (PID = %d) et décrémentation de nbOngoing.\n", ended);
- */            (*nbOngoing)--;
+*/          (*nbOngoing)--;
+            if (WIFEXITED(status)) {
+                int child_ret = WEXITSTATUS(status);
+                if (child_ret > *val_retour) {
+                    *val_retour = child_ret;
+                }
+            }
         }
     }
     pid_t pid;
