@@ -6,6 +6,7 @@
 #include "prompt.h"
 #include "exit.h"
 #include "builtins.h"
+#include "signals.h"
 
 #define MAX_ARGS 100
 
@@ -26,6 +27,7 @@
  * @return Le code de retour du shell (dernier code de retour d'une commande interne).
  */
 int main() {
+    signal_handlers();
     char *ligne;
     int val = 0;  // Code de retour du shell, initialisé à 0 (succès)
     char *args[MAX_ARGS];
