@@ -45,30 +45,34 @@ char* getPrompt(int valRes) {
     int visible_len = 0;  // Compte les caractères qui vont être affiché
     int len = 0;          // Compte les caractères totaux dans le buffer
 
+
     // Basculement des couleurs selon la valeur de retour
+
     if (valRes == 255) {
-    // Code de retour normal (255) sans signal
-    len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes);
-    visible_len += snprintf(NULL, 0, "[%d]", valRes);
-    } else if (valRes >= 128 && valRes < 255) {
-        int signal_number = valRes - 128; // Calculer le numéro du signal
-        if (is_valid_signal(signal_number)) {
-            len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[SIG]", signal_number);
-            visible_len += snprintf(NULL, 0, "[SIG]", signal_number);
-        } else {
-            // singal non reconnue ->  valeur par défaut
-            len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes);
-            visible_len += snprintf(NULL, 0, "[%d]", valRes);
-        }
-    } else if (valRes >= 0) {
+        // Code de retour normal (255) sans signal
+        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes);
+        visible_len += snprintf(NULL, 0, "[%d]", valRes);
+    } 
+
+    else if (valRes >= 128 && valRes < 255 && is_valid_signal(valRes-128)) {
+        //Signal -> valeur par défaut [SIG]
+        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[SIG]");
+        visible_len += snprintf(NULL, 0, "[SIG]");
+    }
+    
+    else if (valRes >= 0) {
         // Vert pour succès
         len += snprintf(prompt + len, PATH_MAX - len, "\001\033[32m\002[%d]", valRes);
         visible_len += snprintf(NULL, 0, "[%d]", valRes);
-    } else {
+    }
+    
+    else {
         // Rouge pour échec
         len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes);
         visible_len += snprintf(NULL, 0, "[%d]", valRes);
     }
+
+
 
 
     // Basculement sur la couleur bleue pour le répertoire
