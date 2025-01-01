@@ -166,7 +166,6 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
         if (!options->hiddenOn && entry->d_name[0] == '.') continue;
 
         snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
-    printf("Processing file: %s\n", filepath);
         if (is_type(filepath, "l")) continue;
 
         if (options->type && !is_type(filepath, options->type)) {
@@ -197,10 +196,8 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
 
         // Gère la parallélisation
         if (options->parallelOn > 0) {
-            printf("Executing command in parallel for: %s\n", filepath); // Debug output
             executeCmdWithParallel(path, var_name, args, cmd_start, cmd_end, val_retour, val, options->parallelOn, nbOngoing);
         } else {
-            printf("Executing command for: %s\n", filepath); // Debug output
             executeCmd(path, var_name, args, cmd_start, cmd_end, val_retour, val);
         }
 
