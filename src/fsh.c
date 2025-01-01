@@ -67,5 +67,6 @@ int main() {
         // Réaffiche le prompt
         rl_redisplay();
     }
+    clear_history();
     return val;
 }
