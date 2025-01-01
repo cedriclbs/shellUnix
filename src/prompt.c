@@ -5,6 +5,10 @@
 #include <limits.h>
 #include <readline/history.h>
 #include "prompt.h"
+#include <stdbool.h>
+#include <signal.h>
+#include "signals.h"
+
 
 #define MAX_LENGTH 30
 
@@ -24,6 +28,9 @@
  * @return Une chaîne de caractères allouée dynamiquement représentant le prompt.
  *         Le caller est responsable de la libération de la mémoire de cette chaîne.
  */
+
+ 
+
 char* getPrompt(int valRes) {
 
     char *prompt = malloc(MAX_LENGTH + 1 + PATH_MAX);
@@ -39,13 +46,30 @@ char* getPrompt(int valRes) {
     int len = 0;          // Compte les caractères totaux dans le buffer
 
     // Basculement des couleurs selon la valeur de retour
-    if (valRes == 0) {
-        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[32m\002[%d]", valRes); // Vert pour succès
+    if (valRes == 255) {
+    // Code de retour normal (255) sans signal
+    len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes);
+    visible_len += snprintf(NULL, 0, "[%d]", valRes);
+    } else if (valRes >= 128 && valRes < 255) {
+        int signal_number = valRes - 128; // Calculer le numéro du signal
+        if (is_valid_signal(signal_number)) {
+            len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[SIG]", signal_number);
+            visible_len += snprintf(NULL, 0, "[SIG]", signal_number);
+        } else {
+            // singal non reconnue ->  valeur par défaut
+            len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes);
+            visible_len += snprintf(NULL, 0, "[%d]", valRes);
+        }
+    } else if (valRes >= 0) {
+        // Vert pour succès
+        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[32m\002[%d]", valRes);
         visible_len += snprintf(NULL, 0, "[%d]", valRes);
     } else {
-        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes); // Rouge pour échec
+        // Rouge pour échec
+        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes);
         visible_len += snprintf(NULL, 0, "[%d]", valRes);
     }
+
 
     // Basculement sur la couleur bleue pour le répertoire
     len += snprintf(prompt + len, PATH_MAX - len, "\001\033[34m\002");

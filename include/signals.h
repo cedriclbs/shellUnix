@@ -5,5 +5,8 @@
 
 void signal_handlers(void);
 
+void reinitialisation_sig(void);
+
+bool is_valid_signal(int sig_number);
 
 #endif // SIGNALS_H
