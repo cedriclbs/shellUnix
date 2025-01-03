@@ -118,34 +118,31 @@ int isThereDelimiterOutside(char **args, char *delimiter){
     return isDelimiterOutside;
 }
 
-/**
- * Exécute une commande interne ou externe avec gestion des redirections.
- * @param args Tableau de chaînes de caractères représentant les arguments de la commande.
- * @param argc Nombre d'arguments dans le tableau `args`.
- * @param val Valeur passée à certaines commandes internes (ex. 'for' ou 'exit').
- * @return Un entier représentant le code de retour de la commande exécutée.
- */
 int execute_builtin(char **args, int argc, int val) {
     if (args[0] == NULL) {
         return val;
     }
-
-    if(isThereDelimiterOutside(args,";") == 1){
+    if (isThereDelimiterOutside(args, ";") == 1) {
         return cmd_line(args);
-    } else if(strcmp(args[0],"for") == 0){
-        return cmd_for(args,argc,val);
-    } else if(strcmp(args[0],"if") == 0){
-        return cmd_if(args,val);
+    }
+    else if (isTherePipeOutside(args) == 1) {
+        return cmd_pipeline(args, val);
+    }
+    else if (strcmp(args[0], "for") == 0) {
+        return cmd_for(args, argc, val);
+    } else if (strcmp(args[0], "if") == 0) {
+        return cmd_if(args, val);
     } else {
         char *input_file = NULL, *output_file = NULL, *error_file = NULL;
         int output_flags = 0, error_flags = 0;
         size_t cmd_size = argc;
         char **cmd_args;
 
-        if (handle_redirections(args, &cmd_args, &input_file, &output_file, &error_file, &output_flags, &error_flags, &cmd_size) != 0) {        free(cmd_args);
+        if (handle_redirections(args, &cmd_args, &input_file, &output_file, &error_file,
+                                &output_flags, &error_flags, &cmd_size) != 0) {
+            free(cmd_args);
             return 1;
         }
-
         int saved_stdin = dup(STDIN_FILENO);
         int saved_stdout = dup(STDOUT_FILENO);
         int saved_stderr = dup(STDERR_FILENO);
@@ -155,16 +152,13 @@ int execute_builtin(char **args, int argc, int val) {
             free(cmd_args);
             return 1;
         }
-
         if (setup_redirections(input_file, output_file, error_file, output_flags, error_flags) != 0) {
             restore_descriptors(saved_stdin, saved_stdout, saved_stderr);
             free(cmd_args);
             return 1;
         }
-
         int result = execute_command(cmd_args, cmd_size, val);
         restore_descriptors(saved_stdin, saved_stdout, saved_stderr);
-        
         free(cmd_args);
         return result;
     }
