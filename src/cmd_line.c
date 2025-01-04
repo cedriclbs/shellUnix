@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include "builtins.h"
+#include "signals.h"
+
 
 /**
  * Alloue et copie les éléments d'une commande dans un nouveau tableau de chaînes de caractères.
@@ -92,6 +94,7 @@ char ***split_cmd(char *args[], int *nb, char *delimiter) {
 int execute_cmd(char **cmd, int argc, int val) {
     pid_t pid = fork(); 
     int ret = 0;
+    //reinitialisation_sig();
 
     switch (pid) {
         case -1:
@@ -100,7 +103,8 @@ int execute_cmd(char **cmd, int argc, int val) {
 
         case 0:  // Code du processus enfant
             ret = execute_builtin(cmd, argc, val);
-            exit(ret);  
+            exit(ret); 
+             
 
         default:  // Code du processus parent
             int status;

@@ -1,6 +1,6 @@
 #ifndef SIGNALS_H
 #define SIGNALS_H
-
+#include <stdbool.h>
 #include <signal.h>
 
 void signal_handlers(void);
