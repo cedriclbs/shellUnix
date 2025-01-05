@@ -39,7 +39,7 @@ int main() {
     while (1) {
         // Affichage du prompt
         char *prompt = getPrompt(val);
-
+        sigint_received=0;
         // Lecture de l'entrée
         ligne = readline(prompt); 
         free(prompt);

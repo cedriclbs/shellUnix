@@ -1,77 +1,51 @@
 #include <signal.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <stdbool.h>
+// Variables globales pour signaler l'interruption
+volatile sig_atomic_t sigint_received = 0;
+int any_signal=0;
 
-void signal_handlers(void) {
+void signal_handler(int sig) {
+    (void)sig; // Supprime l'avertissement pour la variable non utilisée
+    printf("Signal %d reçu dans le processus %d\n", sig, getpid());
+    sigint_received = 1; // Signal reçu
+}
+
+void handle_sigterm(int sig) {
+}
+
+// Installation des gestionnaires
+void signal_handlers() {
     struct sigaction sa;
+    sigset_t mask;
 
-    sa.sa_handler = SIG_IGN;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    if (sigaction(SIGTERM, &sa, NULL) == -1) {
-        perror("Erreur SIGTERM");
-        exit(EXIT_FAILURE);
-    }
-
-    sa.sa_handler = SIG_IGN;
+    // Initialisation complète de la structure sigaction
+    memset(&sa, 0, sizeof(struct sigaction));
+    sa.sa_handler = signal_handler;
+    
+    // Configuration des flags
+    sa.sa_flags = SA_RESTART; // Redémarrer les appels système interrompus
+    
+    // Initialisation du masque de signaux
+    sigemptyset(&sa.sa_mask); // Vider le masque pendant le gestionnaire
+    sigaddset(&sa.sa_mask, SIGINT); // Bloquer SIGINT pendant son traitement
+    
+    // Installation du gestionnaire pour SIGINT
     if (sigaction(SIGINT, &sa, NULL) == -1) {
-        perror("Erreur SIGINT");
-        exit(EXIT_FAILURE);
+        perror("SIGINT");
+        exit(1);
     }
-}
 
-void reinitialisation_sig () {
-    struct sigaction sa_default;
-
-        sa_default.sa_handler = SIG_DFL;
-        sigemptyset(&sa_default.sa_mask);
-        sa_default.sa_flags = 0;
-        if (sigaction(SIGTERM, &sa_default, NULL) == -1) {
-            perror("Erreur lors de la réinitialisation de SIGTERM");
-            exit(EXIT_FAILURE);
-        }
-
-        if (sigaction(SIGINT, &sa_default, NULL) == -1) {
-            perror("Erreur lors de la réinitialisation de SIGINT");
-            exit(EXIT_FAILURE);
-        }
-}
-
-
-
-
- bool is_valid_signal(int sig_number) {
-    switch (sig_number) {
-        case SIGHUP:
-        case SIGINT:
-        case SIGQUIT:
-        case SIGILL:
-        case SIGTRAP:
-        case SIGABRT:
-        case SIGBUS:
-        case SIGFPE:
-        case SIGKILL:
-        case SIGUSR1:
-        case SIGSEGV:
-        case SIGUSR2:
-        case SIGPIPE:
-        case SIGALRM:
-        case SIGTERM:
-        case SIGCHLD:
-        case SIGCONT:
-        case SIGSTOP:
-        case SIGTSTP:
-        case SIGTTIN:
-        case SIGTTOU:
-        case SIGURG:
-        case SIGXCPU:
-        case SIGXFSZ:
-        case SIGVTALRM:
-        case SIGPROF:
-            return true;
-        default:
-            return false;
+    // Configuration du masque global des signaux
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGTERM);
+    
+    // Bloquer SIGTERM au niveau du processus
+    if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1) {
+        perror("Erreur masque de signaux");
+        exit(1);
     }
 }

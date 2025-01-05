@@ -7,7 +7,9 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include "../include/for.h"
+#include "../include/signals.h"
 #include "../include/builtins.h"
+
 
 #define MAX_CMD_ARGS 256
 #define MAX_PATH 1024
@@ -113,6 +115,9 @@ void executeCmd(const char *filepath, const char *var_name, char **args, int cmd
 }
 
 void executeCmdWithParallel(const char *filepath, const char *var_name, char **args, int cmd_start, int cmd_end, int *val_retour, int val, int max ,int *nbOngoing){
+    if (sigint_received) {
+        return; 
+    }
     // Attendre qu'un processus ait fini
     while(*nbOngoing >= max){ /* à tester avec == mais pour être sur avec >= d'abord*/
         int status;

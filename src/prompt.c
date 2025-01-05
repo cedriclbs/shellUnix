@@ -47,14 +47,12 @@ char* getPrompt(int valRes) {
 
 
     // Basculement des couleurs selon la valeur de retour
-
     if (valRes == 255) {
         // Code de retour normal (255) sans signal
         len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes);
         visible_len += snprintf(NULL, 0, "[%d]", valRes);
     } 
-
-    else if (valRes >= 128 && valRes < 255 && is_valid_signal(valRes-128)) {
+    else if ((valRes >= 128 && valRes <=159)) {
         //Signal -> valeur par défaut [SIG]
         len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[SIG]");
         visible_len += snprintf(NULL, 0, "[SIG]");
@@ -101,6 +99,6 @@ char* getPrompt(int valRes) {
 
     // Basculement sur la couleur normale et ajout du symbole du prompt
     snprintf(prompt + len, PATH_MAX - len, "\001\033[00m\002$ ");
-
+    any_signal=0;
     return prompt;
 }

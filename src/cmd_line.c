@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include "builtins.h"
+#include "signal.h"
 #include "signals.h"
 
 
@@ -91,7 +92,7 @@ char ***split_cmd(char *args[], int *nb, char *delimiter) {
  * @param val Valeur à passer à la fonction builtin si nécessaire.
  * @return Code de sortie de la commande exécutée.
  */
-int execute_cmd(char **cmd, int argc, int val) {
+int execute_cmd(char **cmd, int argc, int val,int *isSigint) {
     pid_t pid = fork(); 
     int ret = 0;
     //reinitialisation_sig();
@@ -124,8 +125,10 @@ int execute_cmd(char **cmd, int argc, int val) {
  * @return Code de sortie de la dernière commande exécutée ou 1 en cas d'erreur.
  */
 int cmd_line(char **args) {
+    signal_handlers();
     int nb_cmd = 0;
-    char ***cmds = split_cmd(args, &nb_cmd, ";");  
+    char ***cmds = split_cmd(args, &nb_cmd, ";");
+    int isSigint =0;  
 
     if (cmds == NULL) {
         return 1;
@@ -138,8 +141,10 @@ int cmd_line(char **args) {
         while (cmds[i][cmd_size] != NULL) {
             cmd_size++;
         }
-        ret = execute_cmd(cmds[i], cmd_size, ret);  
+        ret = execute_cmd(cmds[i], cmd_size, ret,&isSigint);
+        if(sigint_received) break;
     }
+     printf("le processus PARENT %d\n", getpid());
     for (int i = 0; i < nb_cmd; i++) {
         free(cmds[i]);  
     }
@@ -147,3 +152,4 @@ int cmd_line(char **args) {
 
     return ret;
 }
+

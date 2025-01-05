@@ -1,12 +1,14 @@
 #ifndef SIGNALS_H
 #define SIGNALS_H
-#include <stdbool.h>
+
 #include <signal.h>
 
-void signal_handlers(void);
+extern volatile sig_atomic_t sigint_received;  // Déclaration externe
+extern int any_signal;
+void signal_handler(int sig);
 
-void reinitialisation_sig(void);
+void signal_handlers();
 
-bool is_valid_signal(int sig_number);
+#endif 
 
-#endif // SIGNALS_H
+

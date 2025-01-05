@@ -6,8 +6,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include "../include/redirections.h"
-#include "signals.h"
-
+#include"../include/signals.h"
 
 /**
  * Exécute une commande avec des redirections éventuelles en utilisant les appels système fork et execvp.
@@ -24,14 +23,34 @@
 
 int execute_command_with_redirection(char **args) {
     pid_t pid = fork();
+
     if (pid == 0) { // Processus enfant
-        reinitialisation_sig();
+        sigset_t new_mask;
+        
+        // Débloquer SIGTERM pour le processus fils
+        sigemptyset(&new_mask);
+        sigaddset(&new_mask, SIGTERM);
+        sigprocmask(SIG_UNBLOCK, &new_mask, NULL);
+
+        // Configurer le gestionnaire pour SIGTERM dans l'enfant
+        struct sigaction sa;
+        sa.sa_handler = signal_handler;
+        sa.sa_flags = 0;
+        sigemptyset(&sa.sa_mask);
+        sigaction(SIGTERM, &sa, NULL);
+
+        // Vérifier si SIGINT a été reçu et mettre à jour any_signal
+        if(sigint_received) {
+            any_signal = 1;
+        }
+
+        // Exécution de la commande
         execvp(args[0], args);
         perror("redirect_exec");
         exit(1);
     } else if (pid > 0) { // Processus parent
         int status;
-        waitpid(pid, &status, 0);
+        waitpid(pid, &status, 0); // Attente de la fin du processus enfant
         if (WIFEXITED(status)) {
             return WEXITSTATUS(status);
         } else if (WIFSIGNALED(status)) {
