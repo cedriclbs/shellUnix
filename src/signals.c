@@ -6,15 +6,44 @@
 #include <stdlib.h>
 // Variables globales pour signaler l'interruption
 volatile sig_atomic_t sigint_received = 0;
+volatile sig_atomic_t sigterm_received = 0;
 int any_signal=0;
 
-void signal_handler(int sig) {
-    (void)sig; // Supprime l'avertissement pour la variable non utilisée
-    printf("Signal %d reçu dans le processus %d\n", sig, getpid());
-    sigint_received = 1; // Signal reçu
+void updatesig(int sig){
+    switch(sig) {
+        case SIGINT:
+            sigint_received = 1;
+            any_signal = 1;
+            break;
+        
+        case SIGTERM:
+            sigterm_received = 1;
+            any_signal = 1;
+            break;
+
+        default:
+        break;
+    }
 }
 
-void handle_sigterm(int sig) {
+void signal_handler(int sig) {
+    updatesig(sig);
+}
+
+void resetSigs(){
+    sigint_received=0;
+    any_signal=0;
+}
+
+void unblockSigterm(){
+    sigset_t new_mask;
+        
+    // Débloquer SIGTERM pour le processus fils
+    sigemptyset(&new_mask);
+    sigaddset(&new_mask, SIGTERM);
+    sigaddset(&new_mask, SIGINT);
+    sigprocmask(SIG_UNBLOCK, &new_mask, NULL);
+    
 }
 
 // Installation des gestionnaires

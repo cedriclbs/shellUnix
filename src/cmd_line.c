@@ -92,7 +92,7 @@ char ***split_cmd(char *args[], int *nb, char *delimiter) {
  * @param val Valeur à passer à la fonction builtin si nécessaire.
  * @return Code de sortie de la commande exécutée.
  */
-int execute_cmd(char **cmd, int argc, int val,int *isSigint) {
+int execute_cmd(char **cmd, int argc, int val) {
     pid_t pid = fork(); 
     int ret = 0;
     //reinitialisation_sig();
@@ -103,18 +103,46 @@ int execute_cmd(char **cmd, int argc, int val,int *isSigint) {
             exit(1);
 
         case 0:  // Code du processus enfant
+            unblockSigterm();
+            resetSigs();
             ret = execute_builtin(cmd, argc, val);
-            exit(ret); 
+            if(sigint_received) {
+                kill(getpid(),SIGINT);
+            } else if(sigterm_received) {
+                kill(getpid(),SIGTERM);
+            } else {
+                exit(ret);
+            }
+            break; 
              
 
         default:  // Code du processus parent
             int status;
             waitpid(pid, &status, 0);  
+            if (WIFSIGNALED(status)) {
+                // Gestion des signaux en premier
+                int signal_num = WTERMSIG(status);
+                if (signal_num == SIGINT) {
+                    sigint_received = 1;
+                    any_signal = 1;
+                    return -1;
+                }
+                any_signal=1;
+                return 128 + WTERMSIG(status);
+            }
             if (WIFEXITED(status)) {
                 ret = WEXITSTATUS(status);  
             }
             return ret;
     }
+    return ret;
+}
+
+void free_cmd(char ***cmds,int nb_cmd){
+    for (int i = 0; i < nb_cmd; i++) {
+        free(cmds[i]);  
+    }
+    free(cmds); 
 }
 
 /**
@@ -125,10 +153,8 @@ int execute_cmd(char **cmd, int argc, int val,int *isSigint) {
  * @return Code de sortie de la dernière commande exécutée ou 1 en cas d'erreur.
  */
 int cmd_line(char **args) {
-    signal_handlers();
     int nb_cmd = 0;
     char ***cmds = split_cmd(args, &nb_cmd, ";");
-    int isSigint =0;  
 
     if (cmds == NULL) {
         return 1;
@@ -136,19 +162,16 @@ int cmd_line(char **args) {
 
     int ret = 0;
     for (int i = 0; i < nb_cmd; i++) {
+        if (sigint_received){free_cmd(cmds,nb_cmd); return ret;}
         int cmd_size = 0;
         // Calcule la taille de la commande actuelle (le nombre d'arguments)
         while (cmds[i][cmd_size] != NULL) {
             cmd_size++;
         }
-        ret = execute_cmd(cmds[i], cmd_size, ret,&isSigint);
-        if(sigint_received) break;
+        ret = execute_cmd(cmds[i], cmd_size, ret);
+        printf("SIGINT : %d et i : %d \n",(int) sigint_received,i);
     }
-     printf("le processus PARENT %d\n", getpid());
-    for (int i = 0; i < nb_cmd; i++) {
-        free(cmds[i]);  
-    }
-    free(cmds);  
+    free_cmd(cmds,nb_cmd);
 
     return ret;
 }

@@ -52,7 +52,7 @@ char* getPrompt(int valRes) {
         len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes);
         visible_len += snprintf(NULL, 0, "[%d]", valRes);
     } 
-    else if ((valRes >= 128 && valRes <=159)) {
+    else if ((valRes >= 128 && any_signal )) {
         //Signal -> valeur par défaut [SIG]
         len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[SIG]");
         visible_len += snprintf(NULL, 0, "[SIG]");
@@ -99,6 +99,6 @@ char* getPrompt(int valRes) {
 
     // Basculement sur la couleur normale et ajout du symbole du prompt
     snprintf(prompt + len, PATH_MAX - len, "\001\033[00m\002$ ");
-    any_signal=0;
+    resetSigs();
     return prompt;
 }

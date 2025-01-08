@@ -3,10 +3,14 @@
 
 #include <signal.h>
 
-extern volatile sig_atomic_t sigint_received;  // Déclaration externe
+extern volatile sig_atomic_t sigint_received;  
+extern volatile sig_atomic_t sigterm_received;
 extern int any_signal;
-void signal_handler(int sig);
 
+void updatesig(int sig);
+void signal_handler(int sig);
+void resetSigs();
+void unblockSigterm();
 void signal_handlers();
 
 #endif 
