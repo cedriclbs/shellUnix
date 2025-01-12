@@ -1,9 +1,3 @@
-/**
- * @file execute_builtin.c
- * @brief Fichier contenant les fonctions principales pour l'exécution des commandes internes ou externes
- * avec gestion des redirections et des pipelines.
- */
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -16,6 +10,10 @@
 #include "../include/pipelines.h"
 
 /**
+ * @file execute_builtin.c
+ * @brief Fichier contenant les fonctions principales pour l'exécution des commandes internes ou externes
+ * avec gestion des redirections et des pipelines.
+ *
  * @brief Vérifie la présence d'une sous-chaîne dans les arguments de la commande.
  *
  * Parcourt les arguments donnés pour vérifier si une sous-chaîne spécifique est présente.
