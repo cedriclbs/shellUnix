@@ -3,7 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include "../include/pipeline.h"
+#include "../include/pipelines.h"
 #include "../include/builtins.h"
 #include "../include/execute.h"
 #include "../include/redirections.h"

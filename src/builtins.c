@@ -7,6 +7,7 @@
 #include "../include/cmd_line.h"
 #include "../include/ifelse.h"
 #include "../include/redirections.h"
+#include "../include/pipelines.h"
 
 /**
  * @brief Vérifie la présence d'une sous-chaîne dans les arguments de la commande.
