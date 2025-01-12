@@ -13,24 +13,25 @@
 #define MAX_LENGTH 30
 
 /**
- * @brief Génère un prompt personnalisé pour le shell, incluant le code de retour, le répertoire actuel et un symbole de prompt.
+ * @brief Génère un prompt coloré et informatif pour le shell.
  *
  * Ce prompt est conçu pour afficher :
- * - Le code de retour du shell, avec une couleur indiquant le succès (vert), l'échec (rouge) ou un signal (rouge avec "SIG").
- * - Le répertoire courant, tronqué si nécessaire pour ne pas dépasser une longueur définie (`MAX_LENGTH`).
- * - Le symbole `$` pour indiquer qu'une commande peut être saisie.
+ * - **Code de retour** : En vert (succès), rouge (échec), ou rouge avec `[SIG]` en cas de signal.
+ * - **Répertoire courant** : En bleu. Si le chemin dépasse une certaine longueur, il est tronqué avec `...`.
+ * - **Symbole `$`** : Indique la possibilité de saisir une commande.
  *
- * Le prompt utilise des codes ANSI pour colorer le texte :
- * - Le code de retour est affiché en vert si `valRes == 0`, en rouge en cas d'échec ou de signal.
- * - Le répertoire est affiché en bleu.
- * 
+ * ### Fonctionnalités :
+ * - Utilise des codes ANSI pour la couleur, compatibles avec la bibliothèque `readline`.
+ * - Tronque le répertoire courant si la longueur totale dépasse `MAX_LENGTH`.
+ * - Gère les signaux en affichant `[SIG]` en cas d'interruption ou terminaison due à un signal.
  * @param valRes Le code de retour précédent du shell (par exemple, le code de retour d'une commande exécutée).
+ *               - `0` pour succès.
+ *               - `128+signal_number` si une commande a été interrompue par un signal.
+ *               - Autres valeurs pour des erreurs.
+ *
  * @return Une chaîne de caractères allouée dynamiquement représentant le prompt.
- *         Le caller est responsable de la libération de la mémoire de cette chaîne.
+ *         Le programme appelant est responsable de libérer la mémoire de cette chaîne avec `free`.
  */
-
- 
-
 char* getPrompt(int valRes) {
 
     char *prompt = malloc(MAX_LENGTH + 1 + PATH_MAX);
@@ -42,8 +43,8 @@ char* getPrompt(int valRes) {
     }
 
     char cwd[PATH_MAX];
-    int visible_len = 0;  // Compte les caractères qui vont être affiché
-    int len = 0;          // Compte les caractères totaux dans le buffer
+    int visible_len = 0; 
+    int len = 0;          
 
 
     // Basculement des couleurs selon la valeur de retour
