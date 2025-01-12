@@ -7,7 +7,9 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include "../include/for.h"
+#include "../include/signals.h"
 #include "../include/builtins.h"
+
 
 #define MAX_CMD_ARGS 256
 #define MAX_PATH 1024
@@ -113,13 +115,22 @@ void executeCmd(const char *filepath, const char *var_name, char **args, int cmd
 }
 
 void executeCmdWithParallel(const char *filepath, const char *var_name, char **args, int cmd_start, int cmd_end, int *val_retour, int val, int max ,int *nbOngoing){
+    if (sigint_received) {
+        return; 
+    }
     // Attendre qu'un processus ait fini
     while(*nbOngoing >= max){ /* à tester avec == mais pour être sur avec >= d'abord*/
         int status;
         pid_t ended = waitpid(-1,&status,0);
         if(ended >0){
 /*             printf("Processus terminé (PID = %d) et décrémentation de nbOngoing.\n", ended);
- */            (*nbOngoing)--;
+*/          (*nbOngoing)--;
+            if (WIFEXITED(status)) {
+                int child_ret = WEXITSTATUS(status);
+                if (child_ret > *val_retour) {
+                    *val_retour = child_ret;
+                }
+            }
         }
     }
     pid_t pid;
@@ -160,6 +171,7 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
         if (!options->hiddenOn && entry->d_name[0] == '.') continue;
 
         snprintf(filepath, sizeof(filepath), "%s/%s", directory, entry->d_name);
+        if (is_type(filepath, "l")) continue;
 
         if (options->type && !is_type(filepath, options->type)) {
             if (is_type(filepath, "d") && options->recursiveOn) {
@@ -188,11 +200,9 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
         }
 
         // Gère la parallélisation
-        if(options->parallelOn > 0){
-/*             printf("FILEPATH en cours de traitement : %s (nbOngoing = %d)\n", filepath, *nbOngoing);
- */            executeCmdWithParallel(path, var_name, args, cmd_start, cmd_end, val_retour, val, options->parallelOn, nbOngoing);
-        }
-        else{
+        if (options->parallelOn > 0) {
+            executeCmdWithParallel(path, var_name, args, cmd_start, cmd_end, val_retour, val, options->parallelOn, nbOngoing);
+        } else {
             executeCmd(path, var_name, args, cmd_start, cmd_end, val_retour, val);
         }
 
@@ -300,7 +310,7 @@ int cmd_for(char **args, int argc, int val) {
     for_rec(directory, var_name, args, cmd_start, cmd_end, &options, val, &val_retour,&nbOngoing);
 
     //Tous les processus enfants doivent être terminé 
-    while (nbOngoing > 0) {
+    while (options.parallelOn > 0 && nbOngoing > 0) {
 /*         printf("Attente des processus restants (nbOngoing = %d)\n", nbOngoing);
  */        int status;
         pid_t finished = waitpid(-1, &status, 0);
