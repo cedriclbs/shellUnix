@@ -25,7 +25,7 @@ int execute_command_with_redirection(char **args) {
     pid_t pid = fork();
 
     if (pid == 0) { // Processus enfant
-        unblockSigterm();
+        unblockSignals();
         // Exécution de la commande
         execvp(args[0], args);
         perror("redirect_exec");

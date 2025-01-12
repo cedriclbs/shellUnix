@@ -10,7 +10,7 @@ extern int any_signal;
 void updatesig(int sig);
 void signal_handler(int sig);
 void resetSigs();
-void unblockSigterm();
+void unblockSignals();
 void signal_handlers();
 
 #endif 

@@ -95,42 +95,34 @@ char ***split_cmd(char *args[], int *nb, char *delimiter) {
 int execute_cmd(char **cmd, int argc, int val) {
     pid_t pid = fork(); 
     int ret = 0;
-    //reinitialisation_sig();
 
     switch (pid) {
         case -1:
             perror("Erreur fork");
             exit(1);
 
-        case 0:  // Code du processus enfant
-            unblockSigterm();
-            resetSigs();
+        case 0: 
+        
+            unblockSignals();
             ret = execute_builtin(cmd, argc, val);
-            if(sigint_received) {
-                kill(getpid(),SIGINT);
-            } else if(sigterm_received) {
-                kill(getpid(),SIGTERM);
-            } else {
-                exit(ret);
-            }
-            break; 
-             
+            if (sigint_received) exit(130);
+            if (sigterm_received) exit(143);
+            exit(ret); 
 
-        default:  // Code du processus parent
+        default:  
             int status;
             waitpid(pid, &status, 0);  
             if (WIFSIGNALED(status)) {
-                // Gestion des signaux en premier
-                int signal_num = WTERMSIG(status);
-                if (signal_num == SIGINT) {
-                    sigint_received = 1;
-                    any_signal = 1;
-                    return -1;
-                }
-                any_signal=1;
                 return 128 + WTERMSIG(status);
             }
             if (WIFEXITED(status)) {
+                if (WEXITSTATUS(status) == 130) {
+                    sigint_received =1;
+                    any_signal=1;
+                }
+                if (WEXITSTATUS(status) == 143) {
+                    any_signal=1;
+                }
                 ret = WEXITSTATUS(status);  
             }
             return ret;
@@ -169,7 +161,6 @@ int cmd_line(char **args) {
             cmd_size++;
         }
         ret = execute_cmd(cmds[i], cmd_size, ret);
-        printf("SIGINT : %d et i : %d \n",(int) sigint_received,i);
     }
     free_cmd(cmds,nb_cmd);
 
