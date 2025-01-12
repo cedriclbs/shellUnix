@@ -46,8 +46,9 @@ int main() {
 
         // Vérification de NULL pour éviter une erreur de segmentation
         if (ligne == NULL) {
-        const char *message = "\n"; 
-        write(STDOUT_FILENO, message, 1);            break;  
+            const char *message = "\n"; 
+            write(STDOUT_FILENO, message, 1);
+            break;  
         }
 
         // Ajoute l'entrée à l'historique
@@ -69,6 +70,7 @@ int main() {
         // Réaffiche le prompt
         rl_redisplay();
     }
+    //Libère la mémoire de l'historique
     clear_history();
     return val;
 }

@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Variables globales pour signaler l'interruption
 volatile sig_atomic_t sigint_received = 0;
 volatile sig_atomic_t sigterm_received = 0;
 int any_signal = 0;
@@ -51,7 +50,7 @@ void signal_handlers() {
     // Initialisation complète de la structure sigaction
     memset(&sa, 0, sizeof(struct sigaction));
     sa.sa_handler = signal_handler;
-    sa.sa_flags = SA_RESTART; // Redémarrer les appels système interrompus
+    sa.sa_flags = SA_RESTART; 
 
     // Initialisation du masque de signaux
     sigemptyset(&sa.sa_mask);
