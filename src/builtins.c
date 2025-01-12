@@ -1,3 +1,9 @@
+/**
+ * @file execute_builtin.c
+ * @brief Fichier contenant les fonctions principales pour l'exécution des commandes internes ou externes 
+ * avec gestion des redirections et des pipelines.
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -15,9 +21,9 @@
  * Parcourt les arguments donnés pour vérifier si une sous-chaîne spécifique est présente.
  *
  * @param args Tableau de chaînes de caractères contenant les arguments de la commande.
- * @param argc Nombre d'éléments dans le tableau args.
+ * @param argc Nombre d'éléments dans le tableau `args`.
  * @param s Sous-chaîne à rechercher dans les arguments.
- * @return 1 si la sous-chaîne s est trouvée dans les arguments, sinon 0.
+ * @return 1 si la sous-chaîne est trouvée dans les arguments, sinon 0.
  */
 int isIn(char **args, int argc, const char *s) {
     for (int i = 0; i < argc; i++) {
@@ -88,21 +94,21 @@ int execute_command(char **cmd_args, int cmd_size, int val) {
     int result = 0;
     if (strcmp(cmd_args[0], "cd") == 0) {
         if (cmd_size > 2) {
-            perror("cd: il y a trop d'argument");
+            perror("cd: trop d'arguments");
             result = 1;
         } else {
             result = cmd_cd(cmd_args);
         }
     } else if (strcmp(cmd_args[0], "exit") == 0) {
         if (cmd_size > 2) {
-            perror("exit: il y a trop d'argument");
+            perror("exit: trop d'arguments");
             result = 1;
         } else {
             result = cmd_exit(cmd_args, val);
         }
     } else if (strcmp(cmd_args[0], "pwd") == 0) {
         if (cmd_size > 1) {
-            perror("pwd: il y a trop d'argument");
+            perror("pwd: trop d'arguments");
             result = 1;
         } else {
             result = cmd_pwd();
@@ -132,7 +138,7 @@ int isThereDelimiterOutside(char **args, char *delimiter) {
 
     while (args[i] != NULL) {
         if (strcmp(args[i], "{") == 0) {
-            in_braces++;  // Entrée dans une paire d'accolades
+            in_braces++; // Entrée dans une paire d'accolades
         } else if (strcmp(args[i], "}") == 0) {
             in_braces--;  // Sortie de la paire d'accolades
         } else if (in_braces == 0 && strcmp(args[i], delimiter) == 0) {
@@ -186,7 +192,7 @@ int execute_builtin(char **args, int argc, int val) {
         int saved_stderr = dup(STDERR_FILENO);
 
         if (saved_stdin == -1 || saved_stdout == -1 || saved_stderr == -1) {
-            perror("dup failed");
+            perror("dup échoué");
             free(cmd_args);
             return 1;
         }
