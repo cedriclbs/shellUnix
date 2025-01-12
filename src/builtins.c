@@ -1,6 +1,6 @@
 /**
  * @file execute_builtin.c
- * @brief Fichier contenant les fonctions principales pour l'exécution des commandes internes ou externes 
+ * @brief Fichier contenant les fonctions principales pour l'exécution des commandes internes ou externes
  * avec gestion des redirections et des pipelines.
  */
 

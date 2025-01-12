@@ -4,9 +4,22 @@
 #include <unistd.h>
 #include "builtins.h"
 
-int cmd_if(char **args, int val) {
-    // Partie du if
 
+/**
+ * @brief Exécute une commande conditionnelle `if` avec une clause `else` optionnelle.
+ *
+ * La fonction analyse les arguments fournis pour construire et exécuter les commandes :
+ * - **TEST** : La commande de test (première partie de `if`).
+ * - **CMD_2** : La commande ou le bloc à exécuter si `TEST` réussit (retourne 0).
+ * - **CMD_3** : La commande ou le bloc à exécuter si `TEST` échoue (retourne une valeur différente de 0).
+ *
+ * @param args Tableau des arguments représentant la commande complète.
+ * @param val Valeur passée à la commande interne pour la gestion du code de retour ou du contexte.
+ * @return Un entier représentant le statut de la commande :
+ *         - `0` si la commande a été exécutée avec succès.
+ *         - `2` si une erreur de syntaxe est détectée (accolades déséquilibrées, arguments manquants, etc.).
+ */
+int cmd_if(char **args, int val) {
     // Extraire la pipeline TEST
     char *cmd_args[100];
     int cmd_argc = 0;

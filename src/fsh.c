@@ -13,18 +13,15 @@
 /**
  * @brief Point d'entrée principal du programme pour un shell interactif.
  *
- * Ce programme implémente un shell simple capable de :
- * - Lire des commandes depuis l'entrée utilisateur.
- * - Analyser et exécuter des commandes internes définies dans le programme.
- * - Gérer l'historique des commandes avec la bibliothèque readline.
- * 
  * Fonctionnalités principales :
  * - Affiche un prompt personnalisé (généré par `getPrompt`).
- * - Découpe les commandes saisies en arguments pour les exécuter.
+ * - Lit l'entrée utilisateur via la bibliothèque `readline`.
+ * - Analyse les commandes utilisateur pour les découper en arguments.
  * - Exécute les commandes internes via `execute_builtin`.
- * - Supporte les signaux de fin d'entrée (`Ctrl+D`) en terminant proprement.
+ * - Ajoute chaque commande à l'historique et prend en charge les fonctionnalités de `readline`.
+ * - Gère proprement les signaux comme `Ctrl+D` (fin d'entrée) ou `Ctrl+C`.
  *
- * @return Le code de retour du shell (dernier code de retour d'une commande interne).
+ * @return Le code de retour du shell, correspondant au dernier code de retour d'une commande interne exécutée.
  */
 int main() {
     signal_handlers();
