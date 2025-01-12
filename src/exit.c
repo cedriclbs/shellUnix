@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdio.h> 
+#include <readline/history.h>
 #include "../include/exit.h"
 
 /**
@@ -30,5 +31,6 @@ int cmd_exit(char **args, int val) {
         }
         ret = atoi(args[1]);
     }
+    clear_history();
     exit(ret); 
 }
