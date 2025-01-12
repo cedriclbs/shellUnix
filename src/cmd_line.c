@@ -4,6 +4,9 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include "builtins.h"
+#include "signal.h"
+#include "signals.h"
+
 
 /**
  * Alloue et copie les éléments d'une commande dans un nouveau tableau de chaînes de caractères.
@@ -33,7 +36,7 @@ char **copy_cmd(char *cur_cmd[], int cur_cmd_size) {
  * @param nb Pointeur pour stocker le nombre de commandes divisées.
  * @return Tableau de tableaux de chaînes, chaque tableau représentant une commande.
  */
-char ***split_cmd(char *args[], int *nb) {
+char ***split_cmd(char *args[], int *nb, char *delimiter) {
     char ***ret_tab = malloc(100 * sizeof(char **));  
     int count = 0;
     int i = 0;
@@ -50,7 +53,7 @@ char ***split_cmd(char *args[], int *nb) {
         }
 
         // Si nous ne sommes pas dans des accolades, gérer les points-virgules
-        if (in_braces == 0 && strcmp(args[i], ";") == 0) {  
+        if (in_braces == 0 && strcmp(args[i], delimiter) == 0) {  
             if (cur_cmd_size > 0) {
                 ret_tab[count] = copy_cmd(cur_cmd, cur_cmd_size);  // Copie la commande dans le tableau final
                 count++;
@@ -63,6 +66,11 @@ char ***split_cmd(char *args[], int *nb) {
             cur_cmd_size++; 
         }
         i++;
+    }
+
+    if(strcmp(delimiter, "|") == 0 && cur_cmd_size == 0 ){
+        perror("pipelines: Erreur de syntaxe");
+        return NULL; /* à vérifier */
     }
 
     // Copierla dernière commande si elle existe
@@ -93,18 +101,40 @@ int execute_cmd(char **cmd, int argc, int val) {
             perror("Erreur fork");
             exit(1);
 
-        case 0:  // Code du processus enfant
+        case 0: 
+        
+            unblockSignals();
             ret = execute_builtin(cmd, argc, val);
-            exit(ret);  
+            if (sigint_received) exit(130);
+            if (sigterm_received) exit(143);
+            exit(ret); 
 
-        default:  // Code du processus parent
+        default:  
             int status;
             waitpid(pid, &status, 0);  
+            if (WIFSIGNALED(status)) {
+                return 128 + WTERMSIG(status);
+            }
             if (WIFEXITED(status)) {
+                if (WEXITSTATUS(status) == 130) {
+                    sigint_received =1;
+                    any_signal=1;
+                }
+                if (WEXITSTATUS(status) == 143) {
+                    any_signal=1;
+                }
                 ret = WEXITSTATUS(status);  
             }
             return ret;
     }
+    return ret;
+}
+
+void free_cmd(char ***cmds,int nb_cmd){
+    for (int i = 0; i < nb_cmd; i++) {
+        free(cmds[i]);  
+    }
+    free(cmds); 
 }
 
 /**
@@ -116,7 +146,7 @@ int execute_cmd(char **cmd, int argc, int val) {
  */
 int cmd_line(char **args) {
     int nb_cmd = 0;
-    char ***cmds = split_cmd(args, &nb_cmd);  
+    char ***cmds = split_cmd(args, &nb_cmd, ";");
 
     if (cmds == NULL) {
         return 1;
@@ -124,17 +154,16 @@ int cmd_line(char **args) {
 
     int ret = 0;
     for (int i = 0; i < nb_cmd; i++) {
+        if (sigint_received){free_cmd(cmds,nb_cmd); return ret;}
         int cmd_size = 0;
         // Calcule la taille de la commande actuelle (le nombre d'arguments)
         while (cmds[i][cmd_size] != NULL) {
             cmd_size++;
         }
-        ret = execute_cmd(cmds[i], cmd_size, ret);  
+        ret = execute_cmd(cmds[i], cmd_size, ret);
     }
-    for (int i = 0; i < nb_cmd; i++) {
-        free(cmds[i]);  
-    }
-    free(cmds);  
+    free_cmd(cmds,nb_cmd);
 
     return ret;
 }
+

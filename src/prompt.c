@@ -3,7 +3,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <readline/history.h>
 #include "prompt.h"
+#include <stdbool.h>
+#include <signal.h>
+#include "signals.h"
+
 
 #define MAX_LENGTH 30
 
@@ -23,12 +28,16 @@
  * @return Une chaîne de caractères allouée dynamiquement représentant le prompt.
  *         Le caller est responsable de la libération de la mémoire de cette chaîne.
  */
+
+ 
+
 char* getPrompt(int valRes) {
 
     char *prompt = malloc(MAX_LENGTH + 1 + PATH_MAX);
 
     if (prompt == NULL) {
         perror("Erreur d'allocation memoire");
+        clear_history();
         exit(1);
     }
 
@@ -36,14 +45,33 @@ char* getPrompt(int valRes) {
     int visible_len = 0;  // Compte les caractères qui vont être affiché
     int len = 0;          // Compte les caractères totaux dans le buffer
 
+
     // Basculement des couleurs selon la valeur de retour
-    if (valRes == 0) {
-        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[32m\002[%d]", valRes); // Vert pour succès
+    if (valRes == 255) {
+        // Code de retour normal (255) sans signal
+        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes);
         visible_len += snprintf(NULL, 0, "[%d]", valRes);
-    } else {
-        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes); // Rouge pour échec
+    } 
+    else if ((valRes >= 128 && any_signal )) {
+        //Signal -> valeur par défaut [SIG]
+        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[SIG]");
+        visible_len += snprintf(NULL, 0, "[SIG]");
+    }
+    
+    else if (valRes >= 0) {
+        // Vert pour succès
+        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[32m\002[%d]", valRes);
         visible_len += snprintf(NULL, 0, "[%d]", valRes);
     }
+    
+    else {
+        // Rouge pour échec
+        len += snprintf(prompt + len, PATH_MAX - len, "\001\033[91m\002[%d]", valRes);
+        visible_len += snprintf(NULL, 0, "[%d]", valRes);
+    }
+
+
+
 
     // Basculement sur la couleur bleue pour le répertoire
     len += snprintf(prompt + len, PATH_MAX - len, "\001\033[34m\002");
@@ -52,6 +80,7 @@ char* getPrompt(int valRes) {
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
         perror("cwd error");
         free(prompt);
+        clear_history();
         exit(1);
     }
 
@@ -70,6 +99,6 @@ char* getPrompt(int valRes) {
 
     // Basculement sur la couleur normale et ajout du symbole du prompt
     snprintf(prompt + len, PATH_MAX - len, "\001\033[00m\002$ ");
-
+    resetSigs();
     return prompt;
 }

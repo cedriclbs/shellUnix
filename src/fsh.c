@@ -6,6 +6,7 @@
 #include "prompt.h"
 #include "exit.h"
 #include "builtins.h"
+#include "signals.h"
 
 #define MAX_ARGS 100
 
@@ -26,6 +27,7 @@
  * @return Le code de retour du shell (dernier code de retour d'une commande interne).
  */
 int main() {
+    signal_handlers();
     char *ligne;
     int val = 0;  // Code de retour du shell, initialisé à 0 (succès)
     char *args[MAX_ARGS];
@@ -37,15 +39,16 @@ int main() {
     while (1) {
         // Affichage du prompt
         char *prompt = getPrompt(val);
-
+        sigint_received=0;
         // Lecture de l'entrée
         ligne = readline(prompt); 
         free(prompt);
 
         // Vérification de NULL pour éviter une erreur de segmentation
         if (ligne == NULL) {
-        const char *message = "\n"; 
-        write(STDOUT_FILENO, message, 1);            break;  
+            const char *message = "\n"; 
+            write(STDOUT_FILENO, message, 1);
+            break;  
         }
 
         // Ajoute l'entrée à l'historique
@@ -67,5 +70,7 @@ int main() {
         // Réaffiche le prompt
         rl_redisplay();
     }
+    //Libère la mémoire de l'historique
+    clear_history();
     return val;
 }
