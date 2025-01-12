@@ -84,7 +84,7 @@ char* getPrompt(int valRes) {
         exit(1);
     }
 
-    // Calcul de la longueur restante pour cwd
+    // Calcule de la longueur restante pour cwd
     int cwd_len = strlen(cwd);
     int max_cwd_len = MAX_LENGTH - visible_len - 2; // 2 pour "$ "
 

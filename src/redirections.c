@@ -51,7 +51,7 @@ char **parse_redirections(char **args, char **input_file, char **output_file, ch
     for (size_t i = 0; i < cmd_s; i++) {
         cmd_args[i] = args[i];
     }
-    cmd_args[cmd_s] = NULL; // Terminateur NULL
+    cmd_args[cmd_s] = NULL; 
 
     // Parcour les arguments restants pour détecter les redirections
     for (size_t i = cmd_s; args[i] != NULL; i++) {

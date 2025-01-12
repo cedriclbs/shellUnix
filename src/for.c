@@ -96,19 +96,19 @@ void executeCmd(const char *filepath, const char *var_name, char **args, int cmd
             replace_variable(arg, var_fullname, filepath, command[cmd_index]);
         } else {
             // Si l'argument ne contient pas la variable, on copie directement
-            snprintf(command[cmd_index], MAX_PATH, "%s", arg);  // Utilisation de snprintf pour éviter toute copie incorrecte
+            snprintf(command[cmd_index], MAX_PATH, "%s", arg);  
         }
         cmd_index++;
     }
 
-    command[cmd_index][0] = '\0';  // Assurer que la chaîne est bien terminée par un caractère nul
+    command[cmd_index][0] = '\0';  // S'assurerque la chaîne est bien terminée par un caractère nul
 
     // Maintenant, on crée un tableau pour passer à `execute_builtin`
     char *final_args[MAX_CMD_ARGS];
     for (int i = 0; i < cmd_index; i++) {
-        final_args[i] = command[i];  // Copier les arguments dans final_args
+        final_args[i] = command[i];  
     }
-    final_args[cmd_index] = NULL;  // Terminer la liste des arguments par NULL
+    final_args[cmd_index] = NULL; 
 
     int ret = execute_builtin(final_args, cmd_index, val);  // Exécuter la commande
     if (ret > *val_retour) *val_retour = ret;
