@@ -1,6 +1,7 @@
-#ifndef CMD_PIPELINES_H
-#define CMD_PIPELINES_H
+#ifndef PIPELINE_H
+#define PIPELINE_H
 
-int cmd_pipelines(char **args);
+int isTherePipeOutside(char **args);
+int cmd_pipeline(char **args, int val);
 
-#endif 
+#endif

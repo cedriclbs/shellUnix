@@ -6,19 +6,27 @@
 #include "../include/ftype.h"
 
 /**
- * @brief Affiche le type d'un fichier ou d'un répertoire.
+ * @brief Affiche le type d'un fichier ou d'un répertoire spécifié.
  *
  * Cette commande permet de déterminer le type d'un chemin donné et affiche l'une des catégories suivantes :
  * - `directory` : si le chemin correspond à un répertoire.
  * - `regular file` : si le chemin correspond à un fichier régulier.
  * - `symbolic link` : si le chemin est un lien symbolique.
  * - `named pipe` : si le chemin est une FIFO (pipeline nommé).
- * - `other` : pour tout autre type de fichier.
+ * - `other` : pour tout autre type de fichier ou chemin non catégorisé.
  *
- * @param args Tableau d'arguments. Le deuxième argument (`args[1]`) doit spécifier le chemin du fichier ou du répertoire.
- * @return Un entier représentant le statut de l'exécution :
+ * ### Fonctionnement :
+ * - La fonction utilise `lstat` pour obtenir les métadonnées associées au chemin donné.
+ * - Les résultats sont affichés sur la sortie standard (`STDOUT`) sous forme d'une chaîne.
+ * - En cas d'erreur (par exemple, chemin invalide ou argument manquant), un message
+ *   d'erreur est affiché sur la sortie d'erreur (`STDERR`).
+ * @param args Tableau de chaînes représentant les arguments de la commande.
+ *             - `args[0]` : la commande elle-même (`ftype`).
+ *             - `args[1]` : chemin du fichier ou répertoire à analyser.
+ *
+ * @return Un entier représentant le statut d'exécution :
  *         - 0 si le type du fichier a été déterminé et affiché avec succès.
- *         - 1 en cas d'erreur (ex. argument manquant, chemin invalide, etc.).
+ *         - 1 en cas d'erreur (par exemple, argument manquant ou chemin invalide).
  */
 int cmd_ftype(char **args) {
     struct stat st;

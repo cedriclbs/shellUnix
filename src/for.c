@@ -36,13 +36,23 @@ typedef struct {
     char *type;
 } Options;
 
-// Vérifie si un fichier a une extension donnée
+/**
+ * Vérifie si un fichier possède une extension donnée.
+ *
+ * @param filename Nom du fichier à vérifier.
+ * @param extension Extension à comparer.
+ * @return 1 si le fichier possède l'extension spécifiée, 0 sinon.
+ */
 int has_extension(const char *filename, const char *extension) {
     const char *dot = strrchr(filename, '.');
     return (dot && strcmp(dot + 1, extension) == 0);
 }
 
-// Retire l'extension d'un nom de fichier
+/**
+ * Supprime l'extension d'un nom de fichier.
+ *
+ * @param filename Nom du fichier à modifier.
+ */
 void remove_extension(char *filename) {
      const char *dot = strrchr(filename, '.');
     size_t len = dot - filename;
@@ -50,7 +60,13 @@ void remove_extension(char *filename) {
     filename[len] = '\0';
 }
 
-//Fonction vérifiant le type de fichier selon le type donné en paramètre
+/**
+ * Vérifie si un fichier correspond à un type spécifique.
+ *
+ * @param path Chemin du fichier.
+ * @param type Type attendu (`d`, `f`, `l`, etc.).
+ * @return 1 si le fichier correspond au type spécifié, 0 sinon.
+ */
 int is_type(const char *path, char *type) {
     struct stat st;
     if (stat(path, &st) == -1) {
@@ -64,7 +80,14 @@ int is_type(const char *path, char *type) {
     return 0;
 }
 
-// Fonction pour remplacer les variables dynamiques comme "$D" dans les arguments
+/**
+ * Remplace les occurrences d'une variable (par ex., `$D`) dans une chaîne par une valeur donnée.
+ *
+ * @param arg Chaîne contenant la variable à remplacer.
+ * @param var_name Nom de la variable (ex. : `$D`).
+ * @param replacement Valeur à insérer à la place de la variable.
+ * @param result Chaîne résultante après remplacement.
+ */
 void replace_variable(const char *arg, const char *var_name, const char *replacement, char *result) {
     const char *src = arg;
     char *dest = result;
@@ -82,7 +105,17 @@ void replace_variable(const char *arg, const char *var_name, const char *replace
     memmove(dest, src, strlen(src) + 1);  // Inclure le caractère nul '\0'
 }
 
-// Fonction construisant et exécutant une commande pour un fichier donné en arg
+/**
+ * Construit et exécute une commande pour un fichier donné.
+ *
+ * @param filepath Chemin du fichier à utiliser pour la commande.
+ * @param var_name Nom de la variable à remplacer dans la commande.
+ * @param args Arguments de la commande `for`.
+ * @param cmd_start Indice du début de la commande entre accolades.
+ * @param cmd_end Indice de fin de la commande entre accolades.
+ * @param val_retour Référence vers la valeur de retour globale.
+ * @param val Valeur initiale passée à la commande interne.
+ */
 void executeCmd(const char *filepath, const char *var_name, char **args, int cmd_start, int cmd_end, int *val_retour, int val) {
     char command[MAX_CMD_ARGS][MAX_PATH];  // Tableau statique pour contenir les arguments de la commande
     int cmd_index = 0;
@@ -114,17 +147,29 @@ void executeCmd(const char *filepath, const char *var_name, char **args, int cmd
     if (ret > *val_retour) *val_retour = ret;
 }
 
+/**
+ * Exécute une commande en mode parallèle.
+ *
+ * @param filepath Chemin du fichier.
+ * @param var_name Nom de la variable à remplacer.
+ * @param args Arguments de la commande `for`.
+ * @param cmd_start Indice de début de la commande.
+ * @param cmd_end Indice de fin de la commande.
+ * @param val_retour Référence vers la valeur de retour globale.
+ * @param val Valeur initiale.
+ * @param max Nombre maximal de processus parallèles autorisés.
+ * @param nbOngoing Référence vers le compteur des processus en cours.
+ */
 void executeCmdWithParallel(const char *filepath, const char *var_name, char **args, int cmd_start, int cmd_end, int *val_retour, int val, int max ,int *nbOngoing){
     if (sigint_received) {
         return; 
     }
     // Attendre qu'un processus ait fini
-    while(*nbOngoing >= max){ /* à tester avec == mais pour être sur avec >= d'abord*/
+    while(*nbOngoing >= max){ 
         int status;
         pid_t ended = waitpid(-1,&status,0);
         if(ended >0){
-/*             printf("Processus terminé (PID = %d) et décrémentation de nbOngoing.\n", ended);
-*/          (*nbOngoing)--;
+          (*nbOngoing)--;
             if (WIFEXITED(status)) {
                 int child_ret = WEXITSTATUS(status);
                 if (child_ret > *val_retour) {
@@ -139,20 +184,30 @@ void executeCmdWithParallel(const char *filepath, const char *var_name, char **a
         case -1 : 
         perror("for: Erreur sur le fork");
         *val_retour =1;
-        return;/* ou exit(1) ?*/
+        return;
 
         case 0 : // processus fils qui exécute la commande
         executeCmd(filepath, var_name, args, cmd_start, cmd_end, val_retour, val);
         exit(*val_retour);
 
         default :
-        (*nbOngoing)++; // Incrémenter le compteur de processus en cours
-/*         printf("NEW PROCESSUS pour: %s (PID = %d, nbOngoing = %d)\n", filepath, pid, *nbOngoing);
- */        /* Gestion erreurs de l'enfant ex : processus enfant arreté par un signal ?*/
+        (*nbOngoing)++; 
     }
 }
 
-// Fonction récursive si l'option -R est activée
+/**
+ * Exécute récursivement une boucle `for` sur un répertoire.
+ *
+ * @param directory Répertoire à parcourir.
+ * @param var_name Nom de la variable à remplacer dans les commandes.
+ * @param args Arguments de la commande `for`.
+ * @param cmd_start Indice de début de la commande entre accolades.
+ * @param cmd_end Indice de fin de la commande entre accolades.
+ * @param options Options de la boucle `for`.
+ * @param val Valeur initiale pour l'exécution.
+ * @param val_retour Référence vers la valeur de retour globale.
+ * @param nbOngoing Référence vers le compteur des processus en cours.
+ */
 void for_rec(const char *directory, const char *var_name, char **args, int cmd_start, int cmd_end, Options *options, int val, int *val_retour, int *nbOngoing) {
     DIR *dir = opendir(directory);
     if (!dir) {
@@ -213,13 +268,44 @@ void for_rec(const char *directory, const char *var_name, char **args, int cmd_s
     closedir(dir);
 }
 
-// Fonction qui indique si la boucle for est sans option
+/**
+ * Vérifie si la boucle `for` ne contient aucune option active.
+ *
+ * @param options Pointeur vers la structure des options.
+ * @return 1 si aucune option n'est activée, 0 sinon.
+ */
 int isNotOptions(Options *options) {
     return options->recursiveOn == 0 && options->hiddenOn == 0 && options->parallelOn == 0
            && options->extension == NULL && options->type == NULL;
 }
 
-// Fontion principale
+/**
+ * Implémente la commande interne `for`.
+ *
+ * Syntaxe :
+ * ```
+ * for <variable> in <répertoire> [options] { <commande> }
+ * ```
+ * - `variable` : Nom de la variable utilisée dans la commande.
+ * - `répertoire` : Chemin du répertoire ou des éléments à parcourir.
+ * - `[options]` : Options disponibles (ex. : `-r`, `-e`, `-t`, `-p`, etc.).
+ * - `<commande>` : Commande exécutée pour chaque élément, entre accolades `{}`.
+ *
+ * Options :
+ * - `-r` : Active la récursivité.
+ * - `-A` : Inclut les fichiers/dossiers cachés.
+ * - `-e <extension>` : Filtre les fichiers par extension.
+ * - `-t <type>` : Filtre par type (ex. : `d` pour répertoires, `f` pour fichiers).
+ * - `-p <n>` : Exécution en parallèle avec `n` processus simultanés.
+ *
+ * @param args Tableau des arguments de la commande `for`.
+ * @param argc Nombre total d'arguments dans `args`.
+ * @param val Valeur initiale utilisée pour les commandes internes.
+ * @return Code de retour :
+ *         - 0 si la boucle s'est exécutée avec succès.
+ *         - 1 en cas d'erreur (syntaxe, accès répertoire, etc.).
+ *         - 2 si la syntaxe de la commande est incorrecte.
+ */
 int cmd_for(char **args, int argc, int val) {
     if (!args || strcmp(args[0], "for") != 0 || !args[1] || strcmp(args[2], "in") != 0 || !args[3]) {
         perror("for: Syntaxe incorrecte pour la boucle 'for'");

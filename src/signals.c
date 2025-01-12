@@ -9,6 +9,14 @@ volatile sig_atomic_t sigint_received = 0;
 volatile sig_atomic_t sigterm_received = 0;
 int any_signal = 0;
 
+/**
+ * @brief Met à jour les indicateurs pour les signaux reçus.
+ *
+ * Cette fonction est appelée lorsqu'un signal est capturé. Elle met à jour les variables
+ * globales pour indiquer quel signal a été reçu.
+ *
+ * @param sig Le signal capturé (exemple : `SIGINT`, `SIGTERM`).
+ */
 void updatesig(int sig) {
     switch (sig) {
         case SIGINT:
@@ -24,16 +32,36 @@ void updatesig(int sig) {
     }
 }
 
+/**
+ * @brief Gestionnaire de signaux générique.
+ *
+ * Capture les signaux spécifiés et appelle la fonction `updatesig` pour mettre à jour
+ * les indicateurs appropriés.
+ *
+ * @param sig Le signal capturé.
+ */
 void signal_handler(int sig) {
     updatesig(sig);
 }
 
+/**
+ * @brief Réinitialise les indicateurs de signaux.
+ *
+ * Cette fonction remet à zéro les variables globales indiquant si des signaux ont été reçus.
+ * Elle est utile pour préparer le programme à capturer de nouveaux signaux.
+ */
 void resetSigs() {
     sigint_received = 0;
     sigterm_received = 0;
     any_signal = 0;
 }
 
+/**
+ * @brief Débloque les signaux SIGINT et SIGTERM.
+ *
+ * Cette fonction utilise `sigprocmask` pour supprimer le masquage de SIGINT et SIGTERM,
+ * permettant au programme de capturer ces signaux.
+ */
 void unblockSignals() {
     sigset_t new_mask;
     sigemptyset(&new_mask);
@@ -42,7 +70,22 @@ void unblockSignals() {
     sigprocmask(SIG_UNBLOCK, &new_mask, NULL);
 }
 
-// Installation des gestionnaires
+/**
+ * @brief Configure les gestionnaires de signaux pour le programme.
+ *
+ * Cette fonction configure les gestionnaires de signaux pour `SIGINT` et masque globalement `SIGTERM`.
+ * Elle utilise `sigaction` pour définir un comportement sûr et reproductible, incluant :
+ * - Redémarrer les appels système interrompus (`SA_RESTART`).
+ * - Bloquer SIGINT pendant son traitement.
+ *
+ * ### Comportement :
+ * - SIGINT (`Ctrl+C`) est capturé et traité via `signal_handler`.
+ * - SIGTERM est globalement bloqué pour éviter des interruptions non gérées.
+ *
+ * ### Gestion des erreurs :
+ * Si la configuration des gestionnaires ou du masque échoue, le programme affiche un message
+ * d'erreur et termine avec un code de sortie 1.
+ */
 void signal_handlers() {
     struct sigaction sa;
     sigset_t mask;
